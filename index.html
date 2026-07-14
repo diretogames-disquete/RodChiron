@@ -1,0 +1,1477 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>RodChiron — 1SG Personnel Dashboard</title>
+<style>
+/* =========================================================================
+   RodChiron — 1SG Personnel Readiness & Accountability Dashboard
+   Standalone single-file app. All data lives in your browser (localStorage).
+   Palette derived from a CVD-validated data-viz reference palette.
+   ========================================================================= */
+:root {
+  color-scheme: light;
+  --page:        #f4f5f2;
+  --surface:     #ffffff;
+  --surface-2:   #fbfbf9;
+  --surface-3:   #f0f1ed;
+  --ink:         #14161a;
+  --ink-2:       #52514e;
+  --muted:       #7c7b76;
+  --line:        #e2e3dc;
+  --line-strong: #cfd0c8;
+  --brand:       #1c3a2e;   /* OD green */
+  --brand-2:     #2c5443;
+  --brand-ink:   #eaf1ec;
+  --accent:      #b08d3f;   /* subdued gold */
+  --focus:       #2a78d6;
+
+  /* status */
+  --good:        #0ca30c;
+  --good-bg:     #e6f5e6;
+  --warn:        #b8860b;
+  --warn-bg:     #faf1d8;
+  --serious:     #c9622f;
+  --serious-bg:  #fbe9df;
+  --crit:        #cc2f2f;
+  --crit-bg:     #fbe3e3;
+  --info:        #1c5cab;
+  --info-bg:     #e4eefb;
+
+  /* categorical (validated order) */
+  --c1:#2a78d6; --c2:#1baf7a; --c3:#eda100; --c4:#008300;
+  --c5:#4a3aa7; --c6:#e34948; --c7:#e87ba4; --c8:#eb6834;
+
+  --radius: 10px;
+  --radius-sm: 7px;
+  --shadow: 0 1px 2px rgba(20,22,26,.06), 0 4px 16px rgba(20,22,26,.05);
+  --shadow-lg: 0 12px 40px rgba(20,22,26,.18);
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page:        #0d0f0c;
+  --surface:     #17191a;
+  --surface-2:   #1c1f1d;
+  --surface-3:   #232623;
+  --ink:         #f2f3ee;
+  --ink-2:       #c3c2b7;
+  --muted:       #8f8f88;
+  --line:        #2c2f2b;
+  --line-strong: #3a3d38;
+  --brand:       #2c5443;
+  --brand-2:     #3a6b56;
+  --brand-ink:   #eaf1ec;
+  --accent:      #cbA968;
+  --good:#0ca30c; --good-bg:#12331a;
+  --warn:#e0a92a; --warn-bg:#3a2f12;
+  --serious:#e0855a; --serious-bg:#3a2317;
+  --crit:#e56060; --crit-bg:#3a1717;
+  --info:#5598e7; --info-bg:#132539;
+  --c1:#3987e5; --c2:#199e70; --c3:#c98500; --c4:#008300;
+  --c5:#9085e9; --c6:#e66767; --c7:#d55181; --c8:#d95926;
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 16px rgba(0,0,0,.4);
+  --shadow-lg: 0 12px 40px rgba(0,0,0,.6);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: var(--sans);
+  background: var(--page);
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+h1,h2,h3,h4 { margin: 0; font-weight: 650; letter-spacing: -0.01em; }
+button { font-family: inherit; }
+a { color: var(--focus); }
+
+/* ---------- Layout ---------- */
+.app { display: flex; min-height: 100vh; }
+.sidebar {
+  width: 234px; flex-shrink: 0;
+  background: var(--brand);
+  color: var(--brand-ink);
+  display: flex; flex-direction: column;
+  position: sticky; top: 0; height: 100vh;
+}
+.brand {
+  padding: 18px 18px 14px; display: flex; gap: 11px; align-items: center;
+  border-bottom: 1px solid rgba(255,255,255,.1);
+}
+.brand .mark {
+  width: 38px; height: 38px; border-radius: 9px; flex-shrink: 0;
+  background: linear-gradient(150deg, var(--accent), #8a6d2c);
+  display: grid; place-items: center; font-weight: 800; color: #1c1a14;
+  font-size: 17px; letter-spacing: -1px;
+}
+.brand .bt { font-size: 15px; font-weight: 750; line-height: 1.1; }
+.brand .bs { font-size: 11px; opacity: .72; letter-spacing: .04em; text-transform: uppercase; }
+.unitbar {
+  padding: 11px 18px; font-size: 12px; line-height: 1.35;
+  border-bottom: 1px solid rgba(255,255,255,.1); opacity: .9;
+}
+.unitbar .un { font-weight: 700; font-size: 13px; opacity: 1; }
+.nav { padding: 10px 10px; flex: 1; overflow-y: auto; }
+.nav button {
+  width: 100%; text-align: left; background: transparent; border: 0;
+  color: var(--brand-ink); padding: 9px 12px; border-radius: 8px;
+  font-size: 13.5px; cursor: pointer; display: flex; align-items: center; gap: 10px;
+  opacity: .82; margin-bottom: 2px; font-weight: 550;
+}
+.nav button .ic { width: 18px; text-align: center; font-size: 15px; opacity: .9; }
+.nav button:hover { background: rgba(255,255,255,.09); opacity: 1; }
+.nav button.active { background: rgba(255,255,255,.16); opacity: 1; font-weight: 650; }
+.nav button .badge {
+  margin-left: auto; background: var(--crit); color: #fff; font-size: 10.5px;
+  min-width: 18px; height: 18px; border-radius: 9px; padding: 0 5px;
+  display: grid; place-items: center; font-weight: 700;
+}
+.sidefoot { padding: 12px 14px; border-top: 1px solid rgba(255,255,255,.1); font-size: 11px; opacity: .6; }
+
+.main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.topbar {
+  display: flex; align-items: center; gap: 12px; padding: 13px 22px;
+  background: var(--surface); border-bottom: 1px solid var(--line);
+  position: sticky; top: 0; z-index: 20;
+}
+.topbar h2 { font-size: 18px; }
+.topbar .sub { color: var(--muted); font-size: 12.5px; }
+.topbar .spacer { flex: 1; }
+.iconbtn {
+  border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink);
+  height: 34px; border-radius: 8px; padding: 0 12px; cursor: pointer; font-size: 13px;
+  display: inline-flex; align-items: center; gap: 7px; font-weight: 550;
+}
+.iconbtn:hover { background: var(--surface-3); }
+.iconbtn.primary { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); }
+.iconbtn.primary:hover { background: var(--brand-2); }
+.iconbtn.sm { height: 29px; padding: 0 9px; font-size: 12px; }
+.content { padding: 22px; max-width: 1320px; width: 100%; }
+
+/* ---------- Cards / grid ---------- */
+.grid { display: grid; gap: 16px; }
+.card {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+  box-shadow: var(--shadow); overflow: hidden;
+}
+.card .hd { padding: 14px 16px 10px; display: flex; align-items: center; gap: 10px; }
+.card .hd h3 { font-size: 14px; }
+.card .hd .spacer { flex: 1; }
+.card .bd { padding: 0 16px 16px; }
+
+/* KPI tiles */
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(168px, 1fr)); gap: 14px; }
+.kpi {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 15px 16px; box-shadow: var(--shadow); position: relative; overflow: hidden;
+}
+.kpi .lab { font-size: 11.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; font-weight: 650; }
+.kpi .val { font-size: 30px; font-weight: 730; letter-spacing: -0.02em; margin-top: 3px; line-height: 1; }
+.kpi .val small { font-size: 15px; color: var(--muted); font-weight: 600; }
+.kpi .sub { font-size: 12px; color: var(--ink-2); margin-top: 6px; }
+.kpi .accentbar { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; }
+.kpi.good .accentbar { background: var(--good); }
+.kpi.warn .accentbar { background: var(--warn); }
+.kpi.crit .accentbar { background: var(--crit); }
+.kpi.info .accentbar { background: var(--info); }
+.kpi.brand .accentbar { background: var(--brand-2); }
+
+/* Bars / mini charts */
+.barrow { display: grid; grid-template-columns: 120px 1fr 44px; align-items: center; gap: 10px; margin: 7px 0; }
+.barrow .bl { font-size: 12.5px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bartrack { background: var(--surface-3); border-radius: 5px; height: 16px; overflow: hidden; display: flex; }
+.barseg { height: 100%; }
+.barval { font-size: 12px; text-align: right; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; font-size: 12px; color: var(--ink-2); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+
+/* Donut */
+.donutwrap { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+
+/* Alerts */
+.alertlist { display: flex; flex-direction: column; gap: 1px; }
+.alert {
+  display: flex; align-items: flex-start; gap: 11px; padding: 10px 12px; border-radius: 8px;
+}
+.alert:hover { background: var(--surface-2); }
+.alert .pill {
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+  padding: 3px 7px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; margin-top: 1px;
+}
+.alert .atxt { font-size: 13px; }
+.alert .atxt .who { font-weight: 650; }
+.alert .ameta { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
+.pill.crit { background: var(--crit-bg); color: var(--crit); }
+.pill.warn { background: var(--warn-bg); color: var(--warn); }
+.pill.serious { background: var(--serious-bg); color: var(--serious); }
+.pill.info { background: var(--info-bg); color: var(--info); }
+.pill.good { background: var(--good-bg); color: var(--good); }
+
+/* ---------- Tables ---------- */
+.toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
+.toolbar input[type=search], .toolbar select, .field input, .field select, .field textarea {
+  font-family: inherit; font-size: 13px; color: var(--ink); background: var(--surface);
+  border: 1px solid var(--line-strong); border-radius: 8px; padding: 7px 10px; height: 34px;
+}
+.toolbar input[type=search] { min-width: 210px; }
+.toolbar .spacer { flex: 1; }
+.field textarea { height: auto; min-height: 66px; resize: vertical; }
+input:focus, select:focus, textarea:focus, button:focus-visible {
+  outline: 2px solid var(--focus); outline-offset: 1px;
+}
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead th {
+  text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .04em;
+  color: var(--muted); font-weight: 700; padding: 10px 12px; border-bottom: 1px solid var(--line);
+  background: var(--surface-2); white-space: nowrap; position: sticky; top: 0; cursor: pointer; user-select: none;
+}
+thead th.noSort { cursor: default; }
+thead th .arrow { opacity: .5; font-size: 10px; }
+tbody td { padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+tbody tr:hover { background: var(--surface-2); }
+tbody tr:last-child td { border-bottom: 0; }
+.namecell { font-weight: 600; }
+.mono { font-variant-numeric: tabular-nums; }
+.rankchip {
+  font-size: 11px; font-weight: 700; background: var(--surface-3); color: var(--ink-2);
+  padding: 2px 6px; border-radius: 5px; letter-spacing: .02em;
+}
+.statustag {
+  font-size: 11.5px; font-weight: 650; padding: 3px 9px; border-radius: 20px; white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 5px;
+}
+.statustag .sd { width: 7px; height: 7px; border-radius: 50%; }
+.rowbtns { display: flex; gap: 4px; }
+.rowbtn { border: 0; background: transparent; cursor: pointer; color: var(--muted); font-size: 14px; padding: 4px 6px; border-radius: 6px; }
+.rowbtn:hover { background: var(--surface-3); color: var(--ink); }
+.empty { text-align: center; color: var(--muted); padding: 40px 20px; font-size: 13.5px; }
+.empty .big { font-size: 30px; margin-bottom: 8px; opacity: .5; }
+
+/* Readiness matrix cells */
+.rzcell {
+  display: inline-flex; align-items: center; justify-content: center; min-width: 62px;
+  padding: 3px 6px; border-radius: 6px; font-size: 11.5px; font-weight: 650; cursor: pointer;
+  font-variant-numeric: tabular-nums; border: 1px solid transparent;
+}
+.rz-good { background: var(--good-bg); color: var(--good); }
+.rz-warn { background: var(--warn-bg); color: var(--warn); }
+.rz-crit { background: var(--crit-bg); color: var(--crit); }
+.rz-none { background: var(--surface-3); color: var(--muted); }
+.rzcell:hover { border-color: var(--line-strong); }
+
+/* ---------- Modal ---------- */
+.overlay {
+  position: fixed; inset: 0; background: rgba(10,12,10,.5); backdrop-filter: blur(2px);
+  display: none; align-items: flex-start; justify-content: center; z-index: 100; padding: 40px 16px; overflow-y: auto;
+}
+.overlay.show { display: flex; }
+.modal {
+  background: var(--surface); border-radius: 14px; box-shadow: var(--shadow-lg);
+  width: 100%; max-width: 560px; border: 1px solid var(--line);
+}
+.modal.wide { max-width: 820px; }
+.modal .mh { padding: 17px 20px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 10px; }
+.modal .mh h3 { font-size: 16px; }
+.modal .mh .x { margin-left: auto; border: 0; background: transparent; font-size: 20px; cursor: pointer; color: var(--muted); line-height: 1; }
+.modal .mb { padding: 18px 20px; }
+.modal .mf { padding: 14px 20px; border-top: 1px solid var(--line); display: flex; gap: 8px; justify-content: flex-end; background: var(--surface-2); border-radius: 0 0 14px 14px; }
+.formgrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 13px; }
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field.full { grid-column: 1 / -1; }
+.field label { font-size: 12px; font-weight: 600; color: var(--ink-2); }
+.field label .req { color: var(--crit); }
+.field .hint { font-size: 11px; color: var(--muted); }
+.field input, .field select, .field textarea { width: 100%; height: auto; min-height: 34px; }
+
+/* Settings */
+.settings-sec { margin-bottom: 22px; }
+.settings-sec > h3 { font-size: 15px; margin-bottom: 3px; }
+.settings-sec > .desc { font-size: 12.5px; color: var(--muted); margin-bottom: 12px; }
+.chiprow { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; }
+.chip {
+  background: var(--surface-3); border: 1px solid var(--line); border-radius: 20px;
+  padding: 4px 8px 4px 11px; font-size: 12.5px; display: inline-flex; align-items: center; gap: 6px;
+}
+.chip button { border: 0; background: transparent; cursor: pointer; color: var(--muted); font-size: 14px; line-height: 1; padding: 0; }
+.chip button:hover { color: var(--crit); }
+.miniform { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; align-items: end; }
+.miniform .field { gap: 3px; }
+.miniform input, .miniform select { height: 32px; }
+.reqtable input, .reqtable select { height: 30px; font-size: 12.5px; padding: 4px 7px; }
+.toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; }
+.toggle input { width: 16px; height: 16px; }
+.banner {
+  background: var(--warn-bg); color: var(--warn); border: 1px solid color-mix(in srgb, var(--warn) 30%, transparent);
+  padding: 10px 13px; border-radius: 9px; font-size: 12.5px; display: flex; gap: 9px; align-items: flex-start; margin-bottom: 16px;
+}
+.segbtns { display: inline-flex; border: 1px solid var(--line-strong); border-radius: 8px; overflow: hidden; }
+.segbtns button { border: 0; background: var(--surface); padding: 7px 13px; font-size: 12.5px; cursor: pointer; color: var(--ink-2); border-right: 1px solid var(--line-strong); }
+.segbtns button:last-child { border-right: 0; }
+.segbtns button.active { background: var(--brand); color: var(--brand-ink); font-weight: 600; }
+
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 20px; }
+.detail-grid .dl { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.detail-grid .dv { font-size: 13.5px; margin-bottom: 8px; }
+.section-title { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 700; margin: 18px 0 8px; }
+
+.timeline { display: flex; flex-direction: column; gap: 8px; }
+.tl-item { display: flex; gap: 10px; font-size: 13px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.tl-item:last-child { border-bottom: 0; }
+.tl-date { color: var(--muted); font-size: 12px; white-space: nowrap; min-width: 82px; font-variant-numeric: tabular-nums; }
+.tl-type { font-weight: 650; }
+
+.toast {
+  position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%) translateY(20px);
+  background: var(--ink); color: var(--page); padding: 11px 18px; border-radius: 9px; font-size: 13px;
+  box-shadow: var(--shadow-lg); opacity: 0; transition: .2s; z-index: 200; pointer-events: none; font-weight: 550;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+.help { font-size: 12.5px; color: var(--muted); }
+.kbd { font-size: 11px; background: var(--surface-3); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; font-family: inherit; }
+
+@media (max-width: 860px) {
+  .sidebar { position: fixed; left: 0; top: 0; transform: translateX(-100%); transition: .2s; z-index: 90; box-shadow: var(--shadow-lg); }
+  .sidebar.open { transform: translateX(0); }
+  .menu-toggle { display: inline-flex !important; }
+  .formgrid, .detail-grid { grid-template-columns: 1fr; }
+  .content { padding: 16px; }
+}
+.menu-toggle { display: none; }
+@media print {
+  .sidebar, .topbar, .toolbar, .rowbtns, .iconbtn { display: none !important; }
+  .content { padding: 0; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="mark">RC</div>
+      <div>
+        <div class="bt">RodChiron</div>
+        <div class="bs">1SG Command Deck</div>
+      </div>
+    </div>
+    <div class="unitbar" id="unitbar"></div>
+    <nav class="nav" id="nav"></nav>
+    <div class="sidefoot">Local-only • v1.0<br><span id="lastsaved"></span></div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <button class="iconbtn sm menu-toggle" id="menuToggle" aria-label="Menu">☰</button>
+      <div>
+        <h2 id="viewTitle">Dashboard</h2>
+        <div class="sub" id="viewSub"></div>
+      </div>
+      <div class="spacer"></div>
+      <div id="topActions"></div>
+      <button class="iconbtn sm" id="themeBtn" title="Toggle theme">◐</button>
+    </header>
+    <main class="content" id="content"></main>
+  </div>
+</div>
+
+<div class="overlay" id="overlay"><div class="modal" id="modal"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* ============================ Data layer ============================ */
+const STORAGE_KEY = "rodchiron_1sg_v1";
+const todayISO = () => new Date().toISOString().slice(0,10);
+
+const DEFAULT_SETTINGS = () => ({
+  unit: { name: "HHC, 1-1 IN BN", uic: "", commander: "", firstSergeant: "", motto: "Manage the Fight" },
+  requirements: [
+    { id:"acft",  name:"ACFT",            abbr:"ACFT", cycleDays:180, amberDays:30, active:true },
+    { id:"wpnq",  name:"Weapons Qual",    abbr:"WPNQ", cycleDays:180, amberDays:30, active:true },
+    { id:"pha",   name:"PHA / Medical",   abbr:"PHA",  cycleDays:365, amberDays:60, active:true },
+    { id:"dental",name:"Dental (DRE)",    abbr:"DEN",  cycleDays:365, amberDays:60, active:true },
+    { id:"vision",name:"Vision",          abbr:"VIS",  cycleDays:730, amberDays:60, active:true },
+    { id:"hearing",name:"Hearing",        abbr:"HRG",  cycleDays:365, amberDays:60, active:true },
+    { id:"hiv",   name:"HIV",             abbr:"HIV",  cycleDays:730, amberDays:60, active:true },
+    { id:"srp",   name:"SRP / Deploy Rdy",abbr:"SRP",  cycleDays:365, amberDays:60, active:false },
+  ],
+  dutyStatuses: [
+    { id:"pdy",   name:"Present for Duty", present:true,  color:"#0ca30c" },
+    { id:"leave", name:"Leave",           present:false, color:"#2a78d6" },
+    { id:"pass",  name:"Pass",            present:false, color:"#1baf7a" },
+    { id:"tdy",   name:"TDY",             present:false, color:"#4a3aa7" },
+    { id:"school",name:"School",          present:false, color:"#eda100" },
+    { id:"appt",  name:"Appointment",     present:true,  color:"#e87ba4" },
+    { id:"detail",name:"Detail",          present:true,  color:"#eb6834" },
+    { id:"sick",  name:"Sick Call/Quarters",present:false,color:"#b8860b" },
+    { id:"awol",  name:"AWOL/Unaccounted",present:false, color:"#cc2f2f" },
+  ],
+  ranks: ["PVT","PV2","PFC","SPC","CPL","SGT","SSG","SFC","MSG","1SG","SGM","2LT","1LT","CPT"],
+  platoons: ["HQ","1st PLT","2nd PLT","3rd PLT","Mortars"],
+  squads: ["1st SQD","2nd SQD","3rd SQD","Weapons SQD","HQ"],
+  suspenseWarnDays: 7,
+  theme: "auto",
+});
+
+const BLANK_DB = () => ({
+  version: 1,
+  settings: DEFAULT_SETTINGS(),
+  soldiers: [],
+  tasks: [],
+  counselings: [],
+  activeView: "dashboard",
+  savedAt: null,
+});
+
+let DB = load();
+
+function load() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return BLANK_DB();
+    const parsed = JSON.parse(raw);
+    const base = BLANK_DB();
+    // shallow-merge settings so new default keys appear for old saves
+    parsed.settings = Object.assign({}, base.settings, parsed.settings || {});
+    return Object.assign(base, parsed);
+  } catch (e) {
+    console.error("Load failed", e);
+    return BLANK_DB();
+  }
+}
+function save() {
+  DB.savedAt = new Date().toISOString();
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(DB)); }
+  catch (e) { toast("⚠ Could not save (storage full?)"); }
+  renderLastSaved();
+}
+const uid = (p="id") => p + "_" + Math.random().toString(36).slice(2,9);
+
+/* ============================ Utilities ============================ */
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+const esc = (s) => String(s==null?"":s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+function daysBetween(a, b) { return Math.round((new Date(b) - new Date(a)) / 86400000); }
+function addDays(iso, n) { const d = new Date(iso); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); }
+function fmtDate(iso) { if (!iso) return "—"; const d = new Date(iso+"T00:00:00"); return d.toLocaleDateString(undefined, {month:"short", day:"numeric", year:"numeric"}); }
+function fmtShort(iso) { if (!iso) return "—"; const d = new Date(iso+"T00:00:00"); return d.toLocaleDateString(undefined, {month:"short", day:"numeric"}); }
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(t._t); t._t = setTimeout(()=>t.classList.remove("show"), 2400); }
+const S = () => DB.settings;
+const soldierName = (s) => s ? `${s.rank||""} ${s.lastName||""}, ${s.firstName||""}`.trim() : "—";
+const soldierShort = (s) => s ? `${s.lastName}, ${(s.firstName||"").slice(0,1)}.` : "—";
+function getReq(id){ return S().requirements.find(r=>r.id===id); }
+function getStatusDef(id){ return S().dutyStatuses.find(d=>d.id===id) || S().dutyStatuses[0]; }
+
+/* Readiness status for one soldier/requirement.
+   returns {level:'good'|'warn'|'crit'|'none', due, days, last} */
+function readinessOf(soldier, req) {
+  const last = (soldier.readiness && soldier.readiness[req.id]) || null;
+  if (!last) return { level:"none", due:null, days:null, last:null };
+  const due = addDays(last, req.cycleDays);
+  const days = daysBetween(todayISO(), due);
+  let level = "good";
+  if (days < 0) level = "crit";
+  else if (days <= req.amberDays) level = "warn";
+  return { level, due, days, last };
+}
+function activeReqs(){ return S().requirements.filter(r=>r.active); }
+/* worst readiness level across a soldier's active requirements */
+function soldierReadinessLevel(soldier) {
+  let worst = "good"; let hasAny = false;
+  for (const req of activeReqs()) {
+    const r = readinessOf(soldier, req);
+    hasAny = true;
+    if (r.level === "crit" || r.level === "none") return "crit";
+    if (r.level === "warn") worst = "warn";
+  }
+  return hasAny ? worst : "good";
+}
+
+/* ============================ Views registry ============================ */
+const VIEWS = [
+  { id:"dashboard",     label:"Dashboard",         icon:"▦" },
+  { id:"roster",        label:"Roster",            icon:"👥" },
+  { id:"readiness",     label:"Readiness",         icon:"✓" },
+  { id:"accountability",label:"Accountability",    icon:"⚑" },
+  { id:"suspenses",     label:"Suspenses",         icon:"⏱" },
+  { id:"counseling",    label:"Counseling & Actions", icon:"✎" },
+  { id:"settings",      label:"Settings",          icon:"⚙" },
+];
+
+function nav(view) {
+  DB.activeView = view;
+  save();
+  $("#sidebar").classList.remove("open");
+  render();
+}
+
+function render() {
+  renderNav();
+  renderUnitbar();
+  const v = DB.activeView;
+  const meta = VIEWS.find(x=>x.id===v) || VIEWS[0];
+  $("#viewTitle").textContent = meta.label;
+  $("#topActions").innerHTML = "";
+  const c = $("#content");
+  c.innerHTML = "";
+  ({
+    dashboard: renderDashboard,
+    roster: renderRoster,
+    readiness: renderReadiness,
+    accountability: renderAccountability,
+    suspenses: renderSuspenses,
+    counseling: renderCounseling,
+    settings: renderSettings,
+  }[v] || renderDashboard)(c);
+  renderLastSaved();
+}
+
+function renderNav() {
+  const alerts = computeAlerts();
+  const counts = {
+    accountability: DB.soldiers.filter(s => !getStatusDef(s.dutyStatus).present).length,
+    suspenses: DB.tasks.filter(t => t.status !== "Complete" && t.dueDate && daysBetween(todayISO(), t.dueDate) < 0).length,
+    readiness: DB.soldiers.filter(s => soldierReadinessLevel(s) === "crit").length,
+  };
+  $("#nav").innerHTML = VIEWS.map(v => {
+    const badge = counts[v.id] ? `<span class="badge">${counts[v.id]}</span>` : "";
+    return `<button class="${v.id===DB.activeView?"active":""}" data-nav="${v.id}">
+      <span class="ic">${v.icon}</span><span>${v.label}</span>${badge}</button>`;
+  }).join("");
+}
+function renderUnitbar() {
+  const u = S().unit;
+  $("#unitbar").innerHTML = `<div class="un">${esc(u.name||"Set unit name")}</div>
+    <div>${esc(u.firstSergeant ? "1SG "+u.firstSergeant : "")}</div>`;
+}
+function renderLastSaved() {
+  const el = $("#lastsaved"); if (!el) return;
+  el.textContent = DB.savedAt ? "Saved " + new Date(DB.savedAt).toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"}) : "";
+}
+
+/* ============================ Alerts engine ============================ */
+function computeAlerts() {
+  const out = [];
+  const warnDays = S().suspenseWarnDays;
+  // Duty status flags
+  for (const s of DB.soldiers) {
+    const def = getStatusDef(s.dutyStatus);
+    if (def.id === "awol") out.push({ sev:"crit", cat:"Accountability", who:soldierName(s), text:"AWOL / Unaccounted for", meta:s.statusNote||"", sort:0, view:"accountability" });
+    if (def.id === "sick") out.push({ sev:"warn", cat:"Accountability", who:soldierName(s), text:"On sick call / quarters", meta:s.statusReturn?"RTD "+fmtShort(s.statusReturn):"", sort:40, view:"accountability" });
+  }
+  // Readiness
+  for (const s of DB.soldiers) {
+    for (const req of activeReqs()) {
+      const r = readinessOf(s, req);
+      if (r.level === "crit" && r.last) out.push({ sev:"crit", cat:"Readiness", who:soldierName(s), text:`${req.name} EXPIRED`, meta:"Due "+fmtShort(r.due)+" ("+Math.abs(r.days)+"d ago)", sort:5+r.days/1000, view:"readiness" });
+      else if (r.level === "warn") out.push({ sev:"warn", cat:"Readiness", who:soldierName(s), text:`${req.name} expiring`, meta:"Due "+fmtShort(r.due)+" ("+r.days+"d)", sort:30+r.days, view:"readiness" });
+    }
+  }
+  // Suspenses
+  for (const t of DB.tasks) {
+    if (t.status === "Complete" || !t.dueDate) continue;
+    const d = daysBetween(todayISO(), t.dueDate);
+    const who = t.assignedTo ? soldierName(DB.soldiers.find(s=>s.id===t.assignedTo)) : (t.assignedText || "Unit");
+    if (d < 0) out.push({ sev:"crit", cat:"Suspense", who:t.title, text:`Overdue ${Math.abs(d)}d`, meta:who, sort:2+d/1000, view:"suspenses" });
+    else if (d <= warnDays) out.push({ sev:"warn", cat:"Suspense", who:t.title, text:`Due in ${d}d`, meta:who, sort:20+d, view:"suspenses" });
+  }
+  out.sort((a,b) => (a.sev===b.sev ? a.sort-b.sort : (a.sev==="crit"?-1:1)));
+  return out;
+}
+
+/* ============================ Dashboard ============================ */
+function renderDashboard(c) {
+  const soldiers = DB.soldiers;
+  const total = soldiers.length;
+  const present = soldiers.filter(s => getStatusDef(s.dutyStatus).present).length;
+  const presentPct = total ? Math.round(present/total*100) : 0;
+  const redRdy = soldiers.filter(s => soldierReadinessLevel(s) === "crit").length;
+  const amberRdy = soldiers.filter(s => soldierReadinessLevel(s) === "warn").length;
+  const overdue = DB.tasks.filter(t => t.status!=="Complete" && t.dueDate && daysBetween(todayISO(),t.dueDate) < 0).length;
+  const openTasks = DB.tasks.filter(t => t.status!=="Complete").length;
+  // expirations within 30 days
+  let exp30 = 0;
+  for (const s of soldiers) for (const req of activeReqs()) {
+    const r = readinessOf(s, req);
+    if (r.days!=null && r.days>=0 && r.days<=30) exp30++;
+  }
+  const alerts = computeAlerts();
+
+  $("#viewSub").textContent = `${total} assigned • ${present} present • ${new Date().toLocaleDateString(undefined,{weekday:"long", month:"long", day:"numeric", year:"numeric"})}`;
+  $("#topActions").innerHTML = `<button class="iconbtn" data-act="add-soldier">＋ Soldier</button>
+    <button class="iconbtn" data-act="print">⎙ Print</button>`;
+
+  if (total === 0) {
+    c.innerHTML = emptyState("👥", "No personnel on the roster yet",
+      "Add your first Soldier, or load a demo platoon to explore the dashboard.",
+      `<button class="iconbtn primary" data-act="add-soldier">＋ Add Soldier</button>
+       <button class="iconbtn" data-act="seed-demo">Load demo platoon</button>`);
+    return;
+  }
+
+  const kpis = `
+    <div class="kpis">
+      ${kpiTile("brand","Assigned Strength", total, `${present} present · ${total-present} out`)}
+      ${kpiTile(presentPct>=90?"good":presentPct>=75?"warn":"crit","Present %", presentPct+"<small>%</small>", `${present} of ${total} on duty`)}
+      ${kpiTile(redRdy?"crit":amberRdy?"warn":"good","Readiness — Red", redRdy, `${amberRdy} amber · ${total-redRdy-amberRdy} green`)}
+      ${kpiTile(overdue?"crit":"good","Overdue Suspenses", overdue, `${openTasks} open total`)}
+      ${kpiTile(exp30?"warn":"good","Expiring ≤30d", exp30, "readiness items due soon")}
+    </div>`;
+
+  // Duty status breakdown
+  const statusCounts = {};
+  for (const d of S().dutyStatuses) statusCounts[d.id] = 0;
+  for (const s of soldiers) statusCounts[s.dutyStatus] = (statusCounts[s.dutyStatus]||0)+1;
+  const dutyBars = S().dutyStatuses.filter(d=>statusCounts[d.id]>0).map(d =>
+    barRow(d.name, statusCounts[d.id], total, d.color)).join("") || `<div class="empty">No data</div>`;
+
+  // Readiness by requirement (stacked good/amber/red/none)
+  const rdyRows = activeReqs().map(req => {
+    let g=0,a=0,r=0,n=0;
+    for (const s of soldiers) { const lv = readinessOf(s,req).level;
+      if (lv==="good") g++; else if (lv==="warn") a++; else if (lv==="crit") r++; else n++; }
+    return stackedRow(req.abbr, [
+      {v:g, c:"var(--good)"}, {v:a, c:"var(--warn)"}, {v:r, c:"var(--crit)"}, {v:n, c:"var(--line-strong)"}
+    ], total);
+  }).join("");
+
+  // Personnel by platoon
+  const platCounts = {};
+  for (const s of soldiers) platCounts[s.platoon||"—"] = (platCounts[s.platoon||"—"]||0)+1;
+  const platBars = Object.entries(platCounts).sort((a,b)=>b[1]-a[1])
+    .map(([p,n],i)=> barRow(p, n, total, `var(--c${(i%8)+1})`)).join("");
+
+  const alertHtml = alerts.length ? alerts.slice(0,14).map(a => `
+    <div class="alert" data-nav="${a.view}">
+      <span class="pill ${a.sev}">${a.cat}</span>
+      <div class="atxt"><span class="who">${esc(a.who)}</span> — ${esc(a.text)}
+        ${a.meta?`<div class="ameta">${esc(a.meta)}</div>`:""}</div>
+    </div>`).join("") : `<div class="empty"><div class="big">✓</div>All clear — no active flags.</div>`;
+
+  c.innerHTML = `
+    ${kpis}
+    <div class="grid" style="grid-template-columns: 1.15fr 1fr; margin-top:16px;">
+      <div class="card">
+        <div class="hd"><h3>Readiness by Requirement</h3><div class="spacer"></div>
+          <span class="help">${activeReqs().length} tracked</span></div>
+        <div class="bd">
+          ${rdyRows || `<div class="empty">No active requirements</div>`}
+          <div class="legend">
+            <span><i class="dot" style="background:var(--good)"></i>Current</span>
+            <span><i class="dot" style="background:var(--warn)"></i>Expiring</span>
+            <span><i class="dot" style="background:var(--crit)"></i>Overdue</span>
+            <span><i class="dot" style="background:var(--line-strong)"></i>No data</span>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="hd"><h3>Accountability</h3><div class="spacer"></div>
+          <span class="help">${present}/${total} present</span></div>
+        <div class="bd">${dutyBars}</div>
+      </div>
+    </div>
+    <div class="grid" style="grid-template-columns: 1fr 1.2fr; margin-top:16px;">
+      <div class="card">
+        <div class="hd"><h3>Strength by Element</h3></div>
+        <div class="bd">${platBars || `<div class="empty">No data</div>`}</div>
+      </div>
+      <div class="card">
+        <div class="hd"><h3>Command Alerts</h3><div class="spacer"></div>
+          <span class="help">${alerts.length} flagged</span></div>
+        <div class="bd"><div class="alertlist">${alertHtml}</div></div>
+      </div>
+    </div>`;
+}
+
+function kpiTile(kind, label, val, sub) {
+  return `<div class="kpi ${kind}"><div class="accentbar"></div>
+    <div class="lab">${label}</div><div class="val">${val}</div>
+    <div class="sub">${sub}</div></div>`;
+}
+function barRow(label, val, total, color) {
+  const pct = total ? (val/total*100) : 0;
+  return `<div class="barrow"><div class="bl" title="${esc(label)}">${esc(label)}</div>
+    <div class="bartrack"><div class="barseg" style="width:${pct}%;background:${color}"></div></div>
+    <div class="barval">${val}</div></div>`;
+}
+function stackedRow(label, segs, total) {
+  const bars = segs.filter(s=>s.v>0).map(s=>`<div class="barseg" style="width:${total?(s.v/total*100):0}%;background:${s.c};box-shadow:0 0 0 1px var(--surface) inset"></div>`).join("");
+  const sum = segs.reduce((a,s)=>a+s.v,0);
+  return `<div class="barrow"><div class="bl">${esc(label)}</div>
+    <div class="bartrack">${bars}</div><div class="barval">${sum}</div></div>`;
+}
+function emptyState(icon, title, msg, actions="") {
+  return `<div class="card"><div class="empty">
+    <div class="big">${icon}</div>
+    <div style="font-size:15px;font-weight:650;color:var(--ink);margin-bottom:4px">${title}</div>
+    <div style="max-width:420px;margin:0 auto 16px">${msg}</div>
+    <div style="display:flex;gap:8px;justify-content:center">${actions}</div>
+  </div></div>`;
+}
+
+/* ============================ Roster ============================ */
+let rosterState = { q:"", platoon:"", status:"", sort:"lastName", dir:1 };
+function renderRoster(c) {
+  $("#viewSub").textContent = `${DB.soldiers.length} Soldiers assigned`;
+  $("#topActions").innerHTML = `<button class="iconbtn primary" data-act="add-soldier">＋ Add Soldier</button>`;
+
+  const platOpts = ["", ...S().platoons].map(p=>`<option value="${esc(p)}"${p===rosterState.platoon?" selected":""}>${p||"All elements"}</option>`).join("");
+  const statOpts = `<option value="">All statuses</option>` + S().dutyStatuses.map(d=>`<option value="${d.id}"${d.id===rosterState.status?" selected":""}>${esc(d.name)}</option>`).join("");
+
+  let rows = DB.soldiers.filter(s => {
+    if (rosterState.platoon && s.platoon !== rosterState.platoon) return false;
+    if (rosterState.status && s.dutyStatus !== rosterState.status) return false;
+    if (rosterState.q) {
+      const hay = `${s.lastName} ${s.firstName} ${s.rank} ${s.mos} ${s.platoon} ${s.squad}`.toLowerCase();
+      if (!hay.includes(rosterState.q.toLowerCase())) return false;
+    }
+    return true;
+  });
+  rows.sort((a,b) => {
+    let av=a[rosterState.sort]||"", bv=b[rosterState.sort]||"";
+    return String(av).localeCompare(String(bv)) * rosterState.dir;
+  });
+
+  const th = (key,label,cls="") => `<th class="${cls}" data-sort="${key}">${label} ${rosterState.sort===key?`<span class="arrow">${rosterState.dir>0?"▲":"▼"}</span>`:""}</th>`;
+
+  const body = rows.length ? rows.map(s => {
+    const def = getStatusDef(s.dutyStatus);
+    const rl = soldierReadinessLevel(s);
+    const rlLabel = {good:"GREEN", warn:"AMBER", crit:"RED"}[rl];
+    const rlColor = {good:"var(--good)", warn:"var(--warn)", crit:"var(--crit)"}[rl];
+    return `<tr data-soldier="${s.id}">
+      <td class="namecell">${esc(soldierName(s))}</td>
+      <td><span class="rankchip">${esc(s.rank||"—")}</span></td>
+      <td class="mono">${esc(s.mos||"—")}</td>
+      <td>${esc(s.platoon||"—")}</td>
+      <td>${esc(s.squad||"—")}</td>
+      <td><span class="statustag" style="background:${def.color}1a;color:${def.color}"><span class="sd" style="background:${def.color}"></span>${esc(def.name)}</span></td>
+      <td><span class="statustag" style="background:${rlColor}1a;color:${rlColor}"><span class="sd" style="background:${rlColor}"></span>${rlLabel}</span></td>
+      <td><div class="rowbtns">
+        <button class="rowbtn" data-view-soldier="${s.id}" title="Details">◔</button>
+        <button class="rowbtn" data-edit-soldier="${s.id}" title="Edit">✎</button>
+        <button class="rowbtn" data-del-soldier="${s.id}" title="Remove">✕</button>
+      </div></td>
+    </tr>`;
+  }).join("") : `<tr><td colspan="8" class="empty">No Soldiers match your filters.</td></tr>`;
+
+  c.innerHTML = `
+    <div class="toolbar">
+      <input type="search" id="rosterSearch" placeholder="Search name, MOS, element…" value="${esc(rosterState.q)}">
+      <select id="rosterPlat">${platOpts}</select>
+      <select id="rosterStat">${statOpts}</select>
+      <div class="spacer"></div>
+      <span class="help">${rows.length} shown</span>
+    </div>
+    <div class="tablewrap"><table>
+      <thead><tr>
+        ${th("lastName","Name")}${th("rank","Rank")}${th("mos","MOS")}
+        ${th("platoon","Element")}${th("squad","Squad")}${th("dutyStatus","Duty Status")}
+        <th class="noSort">Readiness</th><th class="noSort"></th>
+      </tr></thead>
+      <tbody>${body}</tbody>
+    </table></div>`;
+
+  $("#rosterSearch").addEventListener("input", e => { rosterState.q = e.target.value; debouncedRoster(); });
+  $("#rosterPlat").addEventListener("change", e => { rosterState.platoon = e.target.value; renderRoster(c); });
+  $("#rosterStat").addEventListener("change", e => { rosterState.status = e.target.value; renderRoster(c); });
+  $$("thead th[data-sort]", c).forEach(th2 => th2.addEventListener("click", () => {
+    const k = th2.dataset.sort;
+    if (rosterState.sort === k) rosterState.dir *= -1; else { rosterState.sort = k; rosterState.dir = 1; }
+    renderRoster(c);
+  }));
+}
+let _rt; function debouncedRoster(){ clearTimeout(_rt); _rt = setTimeout(()=>renderRoster($("#content")), 200); }
+
+/* ---------- Soldier form ---------- */
+function soldierForm(existing) {
+  const s = existing || { readiness:{}, dutyStatus:"pdy" };
+  const opt = (arr, sel) => arr.map(v=>`<option value="${esc(v)}"${v===sel?" selected":""}>${esc(v)}</option>`).join("");
+  const body = `
+    <div class="formgrid">
+      <div class="field"><label>Last name <span class="req">*</span></label><input id="f_last" value="${esc(s.lastName||"")}"></div>
+      <div class="field"><label>First name</label><input id="f_first" value="${esc(s.firstName||"")}"></div>
+      <div class="field"><label>Rank</label><select id="f_rank">${opt(S().ranks, s.rank||"")}</select></div>
+      <div class="field"><label>MOS</label><input id="f_mos" value="${esc(s.mos||"")}" placeholder="11B"></div>
+      <div class="field"><label>Element / Platoon</label><select id="f_plat">${opt(["",...S().platoons], s.platoon||"")}</select></div>
+      <div class="field"><label>Squad</label><select id="f_squad">${opt(["",...S().squads], s.squad||"")}</select></div>
+      <div class="field"><label>Duty status</label><select id="f_duty">${S().dutyStatuses.map(d=>`<option value="${d.id}"${d.id===s.dutyStatus?" selected":""}>${esc(d.name)}</option>`).join("")}</select></div>
+      <div class="field"><label>DoD ID (last 4)</label><input id="f_dodid" maxlength="4" value="${esc(s.dodid||"")}" placeholder="0000"></div>
+      <div class="field"><label>Phone</label><input id="f_phone" value="${esc(s.phone||"")}"></div>
+      <div class="field"><label>Date assigned</label><input type="date" id="f_assigned" value="${esc(s.dateAssigned||"")}"></div>
+      <div class="field full"><label>Notes</label><textarea id="f_notes">${esc(s.notes||"")}</textarea></div>
+    </div>
+    <div class="section-title">Readiness dates — last completed</div>
+    <div class="formgrid">
+      ${activeReqs().map(req=>`<div class="field"><label>${esc(req.name)} <span class="hint">(${req.cycleDays}d cycle)</span></label>
+        <input type="date" data-rdy="${req.id}" value="${esc((s.readiness&&s.readiness[req.id])||"")}"></div>`).join("")}
+    </div>`;
+  openModal(existing?"Edit Soldier":"Add Soldier", body, [
+    { label:"Cancel", cls:"", act:closeModal },
+    { label: existing?"Save changes":"Add Soldier", cls:"primary", act:()=>{
+      const last = $("#f_last").value.trim();
+      if (!last) { toast("Last name is required"); return; }
+      const rec = existing || { id: uid("sol"), readiness:{} };
+      rec.lastName = last;
+      rec.firstName = $("#f_first").value.trim();
+      rec.rank = $("#f_rank").value;
+      rec.mos = $("#f_mos").value.trim().toUpperCase();
+      rec.platoon = $("#f_plat").value;
+      rec.squad = $("#f_squad").value;
+      rec.dutyStatus = $("#f_duty").value;
+      rec.dodid = $("#f_dodid").value.trim();
+      rec.phone = $("#f_phone").value.trim();
+      rec.dateAssigned = $("#f_assigned").value;
+      rec.notes = $("#f_notes").value.trim();
+      rec.readiness = rec.readiness || {};
+      $$("[data-rdy]").forEach(inp => {
+        const v = inp.value; if (v) rec.readiness[inp.dataset.rdy] = v; else delete rec.readiness[inp.dataset.rdy];
+      });
+      if (!existing) DB.soldiers.push(rec);
+      save(); closeModal(); render();
+      toast(existing?"Soldier updated":"Soldier added");
+    }},
+  ]);
+}
+
+function soldierDetail(id) {
+  const s = DB.soldiers.find(x=>x.id===id); if (!s) return;
+  const def = getStatusDef(s.dutyStatus);
+  const rdy = activeReqs().map(req => {
+    const r = readinessOf(s, req);
+    const cls = r.level==="good"?"rz-good":r.level==="warn"?"rz-warn":r.level==="crit"?"rz-crit":"rz-none";
+    const txt = r.last ? (r.days<0?`${Math.abs(r.days)}d over`:`${r.days}d left`) : "No data";
+    return `<div class="barrow" style="grid-template-columns:130px 1fr">
+      <div class="bl">${esc(req.name)}</div>
+      <div><span class="rzcell ${cls}">${txt}</span>
+        <span class="help" style="margin-left:8px">${r.last?"last "+fmtShort(r.last)+" · due "+fmtShort(r.due):"—"}</span></div>
+    </div>`;
+  }).join("");
+  const logs = DB.counselings.filter(x=>x.soldierId===id).sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+  const logHtml = logs.length ? `<div class="timeline">${logs.map(l=>`
+    <div class="tl-item"><span class="tl-date">${fmtShort(l.date)}</span>
+      <div><span class="tl-type">${esc(l.type)}</span><div class="help">${esc(l.summary||"")}</div></div></div>`).join("")}</div>`
+    : `<div class="help">No counseling or actions logged.</div>`;
+  const tasks = DB.tasks.filter(t=>t.assignedTo===id && t.status!=="Complete");
+  const taskHtml = tasks.length ? `<div class="timeline">${tasks.map(t=>`
+    <div class="tl-item"><span class="tl-date">${fmtShort(t.dueDate)}</span>
+      <div><span class="tl-type">${esc(t.title)}</span> <span class="pill ${t.dueDate&&daysBetween(todayISO(),t.dueDate)<0?"crit":"info"}">${esc(t.status)}</span></div></div>`).join("")}</div>`
+    : `<div class="help">No open suspenses.</div>`;
+
+  const body = `
+    <div class="detail-grid">
+      <div><div class="dl">Rank / MOS</div><div class="dv">${esc(s.rank||"—")} · ${esc(s.mos||"—")}</div></div>
+      <div><div class="dl">Element</div><div class="dv">${esc(s.platoon||"—")} / ${esc(s.squad||"—")}</div></div>
+      <div><div class="dl">Duty status</div><div class="dv"><span class="statustag" style="background:${def.color}1a;color:${def.color}"><span class="sd" style="background:${def.color}"></span>${esc(def.name)}</span>${s.statusReturn?` · RTD ${fmtShort(s.statusReturn)}`:""}</div></div>
+      <div><div class="dl">DoD ID (last 4) · Phone</div><div class="dv">${esc(s.dodid||"—")} · ${esc(s.phone||"—")}</div></div>
+      <div><div class="dl">Date assigned</div><div class="dv">${fmtDate(s.dateAssigned)}</div></div>
+      <div><div class="dl">Notes</div><div class="dv">${esc(s.notes||"—")}</div></div>
+    </div>
+    <div class="section-title">Readiness</div>${rdy||'<div class="help">No active requirements.</div>'}
+    <div class="section-title">Open suspenses</div>${taskHtml}
+    <div class="section-title">Counseling & actions</div>${logHtml}`;
+  openModal(soldierName(s), body, [
+    { label:"Log action", cls:"", act:()=>{ closeModal(); counselingForm(null, id); } },
+    { label:"Edit", cls:"primary", act:()=>{ closeModal(); soldierForm(s); } },
+  ], "wide");
+}
+
+/* ============================ Readiness matrix ============================ */
+function renderReadiness(c) {
+  const reqs = activeReqs();
+  $("#viewSub").textContent = `${reqs.length} requirements tracked across ${DB.soldiers.length} Soldiers`;
+  $("#topActions").innerHTML = `<button class="iconbtn" data-act="print">⎙ Print</button>
+    <button class="iconbtn" data-nav="settings">⚙ Configure</button>`;
+
+  if (!DB.soldiers.length) { c.innerHTML = emptyState("✓","No personnel yet","Add Soldiers to track readiness.",`<button class="iconbtn primary" data-act="add-soldier">＋ Add Soldier</button>`); return; }
+  if (!reqs.length) { c.innerHTML = emptyState("✓","No active requirements","Enable or add readiness requirements in Settings.",`<button class="iconbtn primary" data-nav="settings">Open Settings</button>`); return; }
+
+  // summary counts
+  const summ = reqs.map(req => { let g=0,a=0,r=0,n=0;
+    for (const s of DB.soldiers){ const lv=readinessOf(s,req).level; if(lv==="good")g++;else if(lv==="warn")a++;else if(lv==="crit")r++;else n++;}
+    return {req,g,a,r,n};
+  });
+
+  const head = `<tr><th style="position:sticky;left:0;background:var(--surface-2);z-index:2">Soldier</th>
+    ${reqs.map(req=>`<th class="noSort" style="text-align:center" title="${esc(req.name)}">${esc(req.abbr)}</th>`).join("")}</tr>`;
+
+  const body = DB.soldiers.slice().sort((a,b)=>(a.lastName||"").localeCompare(b.lastName||"")).map(s => {
+    const cells = reqs.map(req => {
+      const r = readinessOf(s, req);
+      const cls = r.level==="good"?"rz-good":r.level==="warn"?"rz-warn":r.level==="crit"?"rz-crit":"rz-none";
+      const txt = r.last ? (r.days<0?Math.abs(r.days)+"d↓":r.days+"d") : "—";
+      const tip = r.last ? `${req.name}: last ${fmtDate(r.last)}, due ${fmtDate(r.due)}` : `${req.name}: no data`;
+      return `<td style="text-align:center"><span class="rzcell ${cls}" data-rdy-edit="${s.id}|${req.id}" title="${esc(tip)}">${txt}</span></td>`;
+    }).join("");
+    return `<tr><td class="namecell" style="position:sticky;left:0;background:var(--surface)">${esc(soldierShort(s))}<div class="help">${esc(s.platoon||"")}</div></td>${cells}</tr>`;
+  }).join("");
+
+  const summRow = `<tr style="background:var(--surface-2)"><td style="position:sticky;left:0;background:var(--surface-2);font-weight:700">Totals</td>
+    ${summ.map(x=>`<td style="text-align:center;font-size:11px">
+      <span style="color:var(--good)">${x.g}</span>/<span style="color:var(--warn)">${x.a}</span>/<span style="color:var(--crit)">${x.r+x.n}</span></td>`).join("")}</tr>`;
+
+  c.innerHTML = `
+    <div class="banner">ⓘ Click any cell to record the last-completed date. Cells show days until due (or <b>Nd↓</b> when overdue). Totals row is Green / Amber / Red+Missing.</div>
+    <div class="tablewrap"><table>
+      <thead>${head}</thead>
+      <tbody>${summRow}${body}</tbody>
+    </table></div>`;
+
+  $$("[data-rdy-edit]", c).forEach(el => el.addEventListener("click", () => {
+    const [sid, rid] = el.dataset.rdyEdit.split("|");
+    quickReadiness(sid, rid);
+  }));
+}
+function quickReadiness(sid, rid) {
+  const s = DB.soldiers.find(x=>x.id===sid); const req = getReq(rid); if(!s||!req) return;
+  const cur = (s.readiness&&s.readiness[rid])||"";
+  const body = `<div class="field full"><label>${esc(req.name)} — last completed date for ${esc(soldierName(s))}</label>
+    <input type="date" id="rq_date" value="${esc(cur)}">
+    <div class="hint">${req.cycleDays}-day cycle · amber ${req.amberDays} days out. Leave blank to clear.</div></div>`;
+  openModal("Update "+req.abbr, body, [
+    { label:"Clear", cls:"", act:()=>{ if(s.readiness) delete s.readiness[rid]; save(); closeModal(); render(); } },
+    { label:"Save", cls:"primary", act:()=>{ const v=$("#rq_date").value; s.readiness=s.readiness||{}; if(v)s.readiness[rid]=v; else delete s.readiness[rid]; save(); closeModal(); render(); toast("Readiness updated"); } },
+  ]);
+}
+
+/* ============================ Accountability ============================ */
+function renderAccountability(c) {
+  const total = DB.soldiers.length;
+  const present = DB.soldiers.filter(s=>getStatusDef(s.dutyStatus).present).length;
+  $("#viewSub").textContent = `${present}/${total} present for duty`;
+  $("#topActions").innerHTML = `<button class="iconbtn" data-act="print">⎙ Print roll-up</button>`;
+  if (!total) { c.innerHTML = emptyState("⚑","No personnel yet","Add Soldiers to track accountability.",`<button class="iconbtn primary" data-act="add-soldier">＋ Add Soldier</button>`); return; }
+
+  // group by status
+  const groups = S().dutyStatuses.map(def => ({ def, list: DB.soldiers.filter(s=>s.dutyStatus===def.id) })).filter(g=>g.list.length);
+  const cards = groups.map(g => `
+    <div class="card">
+      <div class="hd"><span class="statustag" style="background:${g.def.color}1a;color:${g.def.color}"><span class="sd" style="background:${g.def.color}"></span>${esc(g.def.name)}</span>
+        <div class="spacer"></div><span class="help">${g.list.length}</span></div>
+      <div class="bd">
+        ${g.list.sort((a,b)=>(a.lastName||"").localeCompare(b.lastName||"")).map(s=>`
+          <div class="barrow" style="grid-template-columns:1fr auto auto;gap:8px;margin:4px 0">
+            <div class="bl" style="width:auto">${esc(soldierName(s))} ${s.statusReturn?`<span class="help">· RTD ${fmtShort(s.statusReturn)}</span>`:""}</div>
+            <select data-quickstatus="${s.id}" class="rz-none" style="height:28px;border-radius:6px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);font-size:12px">
+              ${S().dutyStatuses.map(d=>`<option value="${d.id}"${d.id===s.dutyStatus?" selected":""}>${esc(d.name)}</option>`).join("")}
+            </select>
+            <button class="rowbtn" data-view-soldier="${s.id}">◔</button>
+          </div>`).join("")}
+      </div>
+    </div>`).join("");
+
+  c.innerHTML = `
+    <div class="kpis" style="margin-bottom:16px">
+      ${kpiTile("brand","Assigned", total, "on the books")}
+      ${kpiTile(present/total>=.9?"good":"warn","Present", present, `${Math.round(present/total*100)}% strength`)}
+      ${kpiTile((total-present)?"warn":"good","Accounted Out", total-present, "leave/TDY/school/etc.")}
+      ${kpiTile(DB.soldiers.filter(s=>s.dutyStatus==="awol").length?"crit":"good","AWOL", DB.soldiers.filter(s=>s.dutyStatus==="awol").length, "unaccounted")}
+    </div>
+    <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(320px,1fr))">${cards}</div>`;
+
+  $$("[data-quickstatus]", c).forEach(sel => sel.addEventListener("change", () => {
+    const s = DB.soldiers.find(x=>x.id===sel.dataset.quickstatus); if(!s) return;
+    s.dutyStatus = sel.value;
+    const def = getStatusDef(sel.value);
+    if (!def.present && ["leave","pass","tdy","school","sick"].includes(def.id)) { save(); closeModal(); statusDetailPrompt(s); }
+    else { s.statusReturn=""; s.statusNote=""; save(); render(); toast("Status updated"); }
+  }));
+}
+function statusDetailPrompt(s) {
+  const def = getStatusDef(s.dutyStatus);
+  const body = `<div class="field full"><label>${esc(soldierName(s))} — ${esc(def.name)}</label></div>
+    <div class="formgrid">
+      <div class="field"><label>Return to duty date</label><input type="date" id="sd_return" value="${esc(s.statusReturn||"")}"></div>
+      <div class="field"><label>Note / location</label><input id="sd_note" value="${esc(s.statusNote||"")}" placeholder="e.g., Ft Benning"></div>
+    </div>`;
+  openModal("Status details", body, [
+    { label:"Skip", cls:"", act:()=>{ save(); closeModal(); render(); } },
+    { label:"Save", cls:"primary", act:()=>{ s.statusReturn=$("#sd_return").value; s.statusNote=$("#sd_note").value.trim(); save(); closeModal(); render(); toast("Status updated"); } },
+  ]);
+}
+
+/* ============================ Suspenses / Taskers ============================ */
+let suspFilter = "open";
+function renderSuspenses(c) {
+  $("#viewSub").textContent = `${DB.tasks.filter(t=>t.status!=="Complete").length} open taskers`;
+  $("#topActions").innerHTML = `<button class="iconbtn primary" data-act="add-task">＋ New Suspense</button>`;
+
+  let tasks = DB.tasks.slice();
+  if (suspFilter==="open") tasks = tasks.filter(t=>t.status!=="Complete");
+  else if (suspFilter==="overdue") tasks = tasks.filter(t=>t.status!=="Complete" && t.dueDate && daysBetween(todayISO(),t.dueDate)<0);
+  else if (suspFilter==="done") tasks = tasks.filter(t=>t.status==="Complete");
+  tasks.sort((a,b)=>(a.dueDate||"9999").localeCompare(b.dueDate||"9999"));
+
+  const prColor = { Immediate:"var(--crit)", Priority:"var(--warn)", Routine:"var(--info)" };
+  const body = tasks.length ? tasks.map(t => {
+    const d = t.dueDate ? daysBetween(todayISO(),t.dueDate) : null;
+    const overdue = t.status!=="Complete" && d!=null && d<0;
+    const who = t.assignedTo ? soldierShort(DB.soldiers.find(s=>s.id===t.assignedTo)) : (t.assignedText||"Unit");
+    const dueTxt = t.dueDate ? (t.status==="Complete"?fmtShort(t.dueDate):(overdue?`${Math.abs(d)}d overdue`:d===0?"Today":`${d}d`)) : "—";
+    return `<tr data-task="${t.id}">
+      <td class="namecell">${esc(t.title)}${t.notes?`<div class="help">${esc(t.notes)}</div>`:""}</td>
+      <td>${esc(t.category||"—")}</td>
+      <td>${esc(who)}</td>
+      <td><span class="statustag" style="background:${prColor[t.priority]||"var(--surface-3)"}1a;color:${prColor[t.priority]||"var(--muted)"}">${esc(t.priority||"—")}</span></td>
+      <td class="mono ${overdue?"":""}" style="${overdue?"color:var(--crit);font-weight:650":""}">${dueTxt}<div class="help">${fmtShort(t.dueDate)}</div></td>
+      <td><select data-taskstatus="${t.id}" style="height:28px;border-radius:6px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);font-size:12px">
+        ${["Open","In Progress","Complete"].map(st=>`<option${st===t.status?" selected":""}>${st}</option>`).join("")}</select></td>
+      <td><div class="rowbtns"><button class="rowbtn" data-edit-task="${t.id}">✎</button><button class="rowbtn" data-del-task="${t.id}">✕</button></div></td>
+    </tr>`;
+  }).join("") : `<tr><td colspan="7" class="empty">No suspenses in this view.</td></tr>`;
+
+  c.innerHTML = `
+    <div class="toolbar">
+      <div class="segbtns">
+        ${["open","overdue","done","all"].map(f=>`<button class="${f===suspFilter?"active":""}" data-suspfilter="${f}">${f[0].toUpperCase()+f.slice(1)}</button>`).join("")}
+      </div>
+      <div class="spacer"></div>
+      <span class="help">Warn window: ${S().suspenseWarnDays} days</span>
+    </div>
+    <div class="tablewrap"><table>
+      <thead><tr><th class="noSort">Tasker</th><th class="noSort">Category</th><th class="noSort">Assigned</th><th class="noSort">Priority</th><th class="noSort">Due</th><th class="noSort">Status</th><th class="noSort"></th></tr></thead>
+      <tbody>${body}</tbody>
+    </table></div>`;
+
+  $$("[data-suspfilter]",c).forEach(b=>b.addEventListener("click",()=>{ suspFilter=b.dataset.suspfilter; renderSuspenses(c); }));
+  $$("[data-taskstatus]",c).forEach(sel=>sel.addEventListener("change",()=>{ const t=DB.tasks.find(x=>x.id===sel.dataset.taskstatus); if(t){t.status=sel.value; save(); render(); }}));
+}
+function taskForm(existing) {
+  const t = existing || { priority:"Routine", status:"Open", dueDate:"" };
+  const solOpts = `<option value="">— Unit / other —</option>` + DB.soldiers.slice().sort((a,b)=>(a.lastName||"").localeCompare(b.lastName||"")).map(s=>`<option value="${s.id}"${s.id===t.assignedTo?" selected":""}>${esc(soldierName(s))}</option>`).join("");
+  const body = `<div class="formgrid">
+    <div class="field full"><label>Tasker / suspense title <span class="req">*</span></label><input id="t_title" value="${esc(t.title||"")}"></div>
+    <div class="field"><label>Category</label><input id="t_cat" value="${esc(t.category||"")}" placeholder="Training, Admin, Supply…"></div>
+    <div class="field"><label>Priority</label><select id="t_pr">${["Routine","Priority","Immediate"].map(p=>`<option${p===t.priority?" selected":""}>${p}</option>`).join("")}</select></div>
+    <div class="field"><label>Assign to Soldier</label><select id="t_sol">${solOpts}</select></div>
+    <div class="field"><label>…or free text</label><input id="t_soltext" value="${esc(t.assignedText||"")}" placeholder="1st PLT, S1, etc."></div>
+    <div class="field"><label>Due date</label><input type="date" id="t_due" value="${esc(t.dueDate||"")}"></div>
+    <div class="field"><label>Status</label><select id="t_status">${["Open","In Progress","Complete"].map(st=>`<option${st===t.status?" selected":""}>${st}</option>`).join("")}</select></div>
+    <div class="field full"><label>Notes</label><textarea id="t_notes">${esc(t.notes||"")}</textarea></div>
+  </div>`;
+  openModal(existing?"Edit Suspense":"New Suspense", body, [
+    { label:"Cancel", cls:"", act:closeModal },
+    { label:existing?"Save":"Add", cls:"primary", act:()=>{
+      const title=$("#t_title").value.trim(); if(!title){toast("Title required");return;}
+      const rec = existing || { id:uid("task") };
+      rec.title=title; rec.category=$("#t_cat").value.trim(); rec.priority=$("#t_pr").value;
+      rec.assignedTo=$("#t_sol").value; rec.assignedText=$("#t_soltext").value.trim();
+      rec.dueDate=$("#t_due").value; rec.status=$("#t_status").value; rec.notes=$("#t_notes").value.trim();
+      if(!existing) DB.tasks.push(rec);
+      save(); closeModal(); render(); toast(existing?"Suspense updated":"Suspense added");
+    }},
+  ]);
+}
+
+/* ============================ Counseling & Actions ============================ */
+const ACTION_TYPES = ["Initial Counseling","Monthly Counseling","Event-Oriented","Corrective Training","Award Recommendation","Promotion","NCOER/Eval","Reprimand","Reintegration","Other"];
+function renderCounseling(c) {
+  $("#viewSub").textContent = `${DB.counselings.length} entries logged`;
+  $("#topActions").innerHTML = `<button class="iconbtn primary" data-act="add-counseling">＋ Log Action</button>`;
+  const logs = DB.counselings.slice().sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+  const body = logs.length ? logs.map(l => {
+    const s = DB.soldiers.find(x=>x.id===l.soldierId);
+    return `<tr>
+      <td class="mono">${fmtDate(l.date)}</td>
+      <td class="namecell">${esc(s?soldierName(s):"(removed)")}</td>
+      <td>${esc(l.type)}</td>
+      <td>${esc(l.summary||"—")}</td>
+      <td><div class="rowbtns"><button class="rowbtn" data-edit-counseling="${l.id}">✎</button><button class="rowbtn" data-del-counseling="${l.id}">✕</button></div></td>
+    </tr>`;
+  }).join("") : `<tr><td colspan="5" class="empty">No counseling or personnel actions logged yet.</td></tr>`;
+
+  // small stat row by type
+  const byType = {};
+  for (const l of DB.counselings) byType[l.type]=(byType[l.type]||0)+1;
+  const chips = Object.entries(byType).sort((a,b)=>b[1]-a[1]).slice(0,6)
+    .map(([t,n])=>`<span class="chip">${esc(t)} <b>${n}</b></span>`).join("");
+
+  c.innerHTML = `
+    ${chips?`<div class="chiprow" style="margin-bottom:14px">${chips}</div>`:""}
+    <div class="tablewrap"><table>
+      <thead><tr><th class="noSort">Date</th><th class="noSort">Soldier</th><th class="noSort">Type</th><th class="noSort">Summary</th><th class="noSort"></th></tr></thead>
+      <tbody>${body}</tbody>
+    </table></div>`;
+}
+function counselingForm(existing, presetSoldier) {
+  if (!DB.soldiers.length) { toast("Add a Soldier first"); return; }
+  const l = existing || { date: todayISO(), type:"Monthly Counseling", soldierId: presetSoldier||"" };
+  const solOpts = DB.soldiers.slice().sort((a,b)=>(a.lastName||"").localeCompare(b.lastName||"")).map(s=>`<option value="${s.id}"${s.id===l.soldierId?" selected":""}>${esc(soldierName(s))}</option>`).join("");
+  const body = `<div class="formgrid">
+    <div class="field"><label>Soldier <span class="req">*</span></label><select id="cl_sol">${solOpts}</select></div>
+    <div class="field"><label>Date</label><input type="date" id="cl_date" value="${esc(l.date||todayISO())}"></div>
+    <div class="field full"><label>Type</label><select id="cl_type">${ACTION_TYPES.map(t=>`<option${t===l.type?" selected":""}>${t}</option>`).join("")}</select></div>
+    <div class="field full"><label>Summary / notes</label><textarea id="cl_sum">${esc(l.summary||"")}</textarea></div>
+  </div>`;
+  openModal(existing?"Edit Entry":"Log Counseling / Action", body, [
+    { label:"Cancel", cls:"", act:closeModal },
+    { label:existing?"Save":"Log", cls:"primary", act:()=>{
+      const rec = existing || { id:uid("cnsl") };
+      rec.soldierId=$("#cl_sol").value; rec.date=$("#cl_date").value; rec.type=$("#cl_type").value; rec.summary=$("#cl_sum").value.trim();
+      if(!existing) DB.counselings.push(rec);
+      save(); closeModal(); render(); toast("Logged");
+    }},
+  ]);
+}
+
+/* ============================ Settings ============================ */
+function renderSettings(c) {
+  $("#viewSub").textContent = "Configure the dashboard to your unit";
+  $("#topActions").innerHTML = "";
+  const u = S().unit;
+
+  c.innerHTML = `
+    <div class="banner">🔒 <b>OPSEC / PII:</b> All data is stored only in this browser on this device (localStorage) — nothing is uploaded. Do not enter classified information or full PII. Export regularly to back up; clearing browser data will erase everything.</div>
+
+    <div class="card"><div class="bd" style="padding-top:16px">
+      <div class="settings-sec">
+        <h3>Unit identity</h3>
+        <div class="desc">Shown in the sidebar and on printed roll-ups.</div>
+        <div class="formgrid">
+          <div class="field"><label>Unit / company</label><input id="set_uname" value="${esc(u.name||"")}"></div>
+          <div class="field"><label>UIC</label><input id="set_uic" value="${esc(u.uic||"")}"></div>
+          <div class="field"><label>Commander</label><input id="set_cdr" value="${esc(u.commander||"")}"></div>
+          <div class="field"><label>First Sergeant</label><input id="set_1sg" value="${esc(u.firstSergeant||"")}"></div>
+          <div class="field full"><label>Motto</label><input id="set_motto" value="${esc(u.motto||"")}"></div>
+        </div>
+        <div style="margin-top:12px"><button class="iconbtn primary" data-act="save-unit">Save unit info</button></div>
+      </div>
+    </div></div>
+
+    <div class="card" style="margin-top:16px"><div class="bd" style="padding-top:16px">
+      <div class="settings-sec" style="margin-bottom:0">
+        <h3>Readiness requirements</h3>
+        <div class="desc">Define what you track and the cadence. <b>Cycle</b> = days valid; <b>Amber</b> = days before due it flags yellow.</div>
+        <div class="tablewrap" style="box-shadow:none">
+          <table class="reqtable"><thead><tr>
+            <th class="noSort">Active</th><th class="noSort">Name</th><th class="noSort">Abbr</th><th class="noSort">Cycle (d)</th><th class="noSort">Amber (d)</th><th class="noSort"></th>
+          </tr></thead><tbody id="reqBody">
+            ${S().requirements.map(r=>`<tr data-req="${r.id}">
+              <td><input type="checkbox" ${r.active?"checked":""} data-rq-active></td>
+              <td><input value="${esc(r.name)}" data-rq-name></td>
+              <td><input value="${esc(r.abbr)}" data-rq-abbr style="width:70px"></td>
+              <td><input type="number" min="1" value="${r.cycleDays}" data-rq-cycle style="width:80px"></td>
+              <td><input type="number" min="0" value="${r.amberDays}" data-rq-amber style="width:80px"></td>
+              <td><button class="rowbtn" data-del-req="${r.id}">✕</button></td>
+            </tr>`).join("")}
+          </tbody></table>
+        </div>
+        <div class="miniform">
+          <div class="field"><label>New requirement</label><input id="nr_name" placeholder="Name"></div>
+          <div class="field"><label>Abbr</label><input id="nr_abbr" placeholder="ABBR" style="width:80px"></div>
+          <div class="field"><label>Cycle</label><input id="nr_cycle" type="number" value="365" style="width:80px"></div>
+          <div class="field"><label>Amber</label><input id="nr_amber" type="number" value="60" style="width:80px"></div>
+          <button class="iconbtn" data-act="add-req">＋ Add</button>
+          <div class="spacer"></div>
+          <button class="iconbtn primary" data-act="save-reqs">Save requirements</button>
+        </div>
+      </div>
+    </div></div>
+
+    <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:16px">
+      <div class="card"><div class="bd" style="padding-top:16px">
+        <div class="settings-sec" style="margin-bottom:0">
+          <h3>Duty statuses</h3>
+          <div class="desc">Statuses marked ✓present count toward strength.</div>
+          <div id="statusList">${S().dutyStatuses.map(d=>`
+            <div class="barrow" style="grid-template-columns:auto 1fr auto auto;gap:8px;margin:5px 0" data-status="${d.id}">
+              <input type="color" value="${d.color}" data-ds-color style="width:28px;height:28px;padding:0;border:1px solid var(--line);border-radius:6px">
+              <input value="${esc(d.name)}" data-ds-name>
+              <label class="toggle"><input type="checkbox" ${d.present?"checked":""} data-ds-present> present</label>
+              <button class="rowbtn" data-del-status="${d.id}">✕</button>
+            </div>`).join("")}</div>
+          <div class="miniform">
+            <input id="ns_name" placeholder="New status name" style="flex:1">
+            <button class="iconbtn" data-act="add-status">＋</button>
+            <button class="iconbtn primary" data-act="save-statuses">Save</button>
+          </div>
+        </div>
+      </div></div>
+
+      <div class="card"><div class="bd" style="padding-top:16px">
+        <div class="settings-sec">
+          <h3>Ranks</h3><div class="desc">Order shown in dropdowns.</div>
+          <div class="chiprow" id="rankChips">${chipList(S().ranks,"rank")}</div>
+          <div class="miniform"><input id="add_rank" placeholder="Add rank"><button class="iconbtn" data-act="add-rank">＋</button></div>
+        </div>
+        <div class="settings-sec">
+          <h3>Elements / Platoons</h3>
+          <div class="chiprow" id="platChips">${chipList(S().platoons,"platoon")}</div>
+          <div class="miniform"><input id="add_plat" placeholder="Add element"><button class="iconbtn" data-act="add-plat">＋</button></div>
+        </div>
+        <div class="settings-sec" style="margin-bottom:0">
+          <h3>Squads</h3>
+          <div class="chiprow" id="squadChips">${chipList(S().squads,"squad")}</div>
+          <div class="miniform"><input id="add_squad" placeholder="Add squad"><button class="iconbtn" data-act="add-squad">＋</button></div>
+        </div>
+      </div></div>
+    </div>
+
+    <div class="card" style="margin-top:16px"><div class="bd" style="padding-top:16px">
+      <div class="settings-sec" style="margin-bottom:0">
+        <h3>Preferences & data</h3>
+        <div class="formgrid">
+          <div class="field"><label>Suspense warning window (days)</label><input type="number" min="1" id="set_warn" value="${S().suspenseWarnDays}">
+            <div class="hint">Taskers due within this many days flag amber.</div></div>
+          <div class="field"><label>Theme</label>
+            <div class="segbtns" id="themeSeg">
+              ${["light","dark","auto"].map(t=>`<button class="${S().theme===t?"active":""}" data-theme-opt="${t}">${t[0].toUpperCase()+t.slice(1)}</button>`).join("")}
+            </div></div>
+        </div>
+        <div style="margin-top:12px"><button class="iconbtn primary" data-act="save-prefs">Save preferences</button></div>
+
+        <div class="section-title">Backup & restore</div>
+        <div class="chiprow">
+          <button class="iconbtn" data-act="export">⭳ Export backup (.json)</button>
+          <button class="iconbtn" data-act="import">⭱ Import backup</button>
+          <button class="iconbtn" data-act="export-csv">⭳ Roster CSV</button>
+          <button class="iconbtn" data-act="seed-demo">Load demo data</button>
+          <div class="spacer"></div>
+          <button class="iconbtn" data-act="wipe" style="color:var(--crit);border-color:var(--crit)">Clear all data</button>
+        </div>
+        <input type="file" id="importFile" accept="application/json" style="display:none">
+      </div>
+    </div></div>
+    <div class="help" style="text-align:center;margin:18px 0">RodChiron 1SG Command Deck · standalone build · your data never leaves this device.</div>`;
+}
+function chipList(arr, kind) {
+  return arr.map(v=>`<span class="chip">${esc(v)} <button data-delchip="${kind}|${esc(v)}">✕</button></span>`).join("") || `<span class="help">None</span>`;
+}
+
+/* ---------- Settings actions ---------- */
+function saveReqsFromDOM() {
+  $$("#reqBody tr[data-req]").forEach(tr => {
+    const req = getReq(tr.dataset.req); if(!req) return;
+    req.active = $("[data-rq-active]", tr).checked;
+    req.name = $("[data-rq-name]", tr).value.trim() || req.name;
+    req.abbr = ($("[data-rq-abbr]", tr).value.trim() || req.abbr).toUpperCase();
+    req.cycleDays = Math.max(1, parseInt($("[data-rq-cycle]", tr).value)||req.cycleDays);
+    req.amberDays = Math.max(0, parseInt($("[data-rq-amber]", tr).value)||0);
+  });
+}
+function saveStatusesFromDOM() {
+  $$('#statusList [data-status]').forEach(row => {
+    const def = getStatusDef(row.dataset.status); if(!def) return;
+    def.name = $("[data-ds-name]",row).value.trim() || def.name;
+    def.color = $("[data-ds-color]",row).value;
+    def.present = $("[data-ds-present]",row).checked;
+  });
+}
+
+/* ============================ Modal ============================ */
+function openModal(title, bodyHtml, buttons, extraCls="") {
+  const m = $("#modal");
+  m.className = "modal " + extraCls;
+  m.innerHTML = `
+    <div class="mh"><h3>${esc(title)}</h3><button class="x" data-close>×</button></div>
+    <div class="mb">${bodyHtml}</div>
+    <div class="mf">${buttons.map((b,i)=>`<button class="iconbtn ${b.cls}" data-mbtn="${i}">${esc(b.label)}</button>`).join("")}</div>`;
+  m._buttons = buttons;
+  $("#overlay").classList.add("show");
+  const first = m.querySelector("input,select,textarea"); if (first) setTimeout(()=>first.focus(),40);
+}
+function closeModal() { $("#overlay").classList.remove("show"); $("#modal").innerHTML = ""; }
+
+/* ============================ Import / Export ============================ */
+function exportBackup() {
+  const blob = new Blob([JSON.stringify(DB, null, 2)], { type:"application/json" });
+  downloadBlob(blob, `rodchiron-backup-${todayISO()}.json`);
+  toast("Backup exported");
+}
+function exportCSV() {
+  const reqs = activeReqs();
+  const head = ["Rank","Last","First","MOS","Element","Squad","DutyStatus","Readiness", ...reqs.map(r=>r.abbr+" due")];
+  const rows = DB.soldiers.map(s => {
+    const def = getStatusDef(s.dutyStatus);
+    return [s.rank, s.lastName, s.firstName, s.mos, s.platoon, s.squad, def.name, soldierReadinessLevel(s).toUpperCase(),
+      ...reqs.map(r=>{const x=readinessOf(s,r); return x.due||"";})];
+  });
+  const csv = [head, ...rows].map(r=>r.map(v=>`"${String(v==null?"":v).replace(/"/g,'""')}"`).join(",")).join("\n");
+  downloadBlob(new Blob([csv],{type:"text/csv"}), `roster-${todayISO()}.csv`);
+  toast("Roster CSV exported");
+}
+function downloadBlob(blob, name) {
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+}
+function importBackup(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      if (!data || !Array.isArray(data.soldiers)) throw new Error("Not a RodChiron backup");
+      confirmModal("Import backup?", `This will replace all current data with the backup (${data.soldiers.length} Soldiers). Continue?`, () => {
+        DB = Object.assign(BLANK_DB(), data);
+        DB.settings = Object.assign(DEFAULT_SETTINGS(), data.settings||{});
+        save(); applyTheme(); render(); toast("Backup imported");
+      });
+    } catch (e) { toast("⚠ Invalid backup file"); }
+  };
+  reader.readAsText(file);
+}
+function confirmModal(title, msg, onYes, danger=false) {
+  openModal(title, `<p style="margin:0;font-size:14px">${esc(msg)}</p>`, [
+    { label:"Cancel", cls:"", act:closeModal },
+    { label:"Confirm", cls: danger?"":"primary", act:()=>{ closeModal(); onYes(); } },
+  ]);
+  if (danger) { const b=$('#modal [data-mbtn="1"]'); if(b){ b.style.background="var(--crit)"; b.style.borderColor="var(--crit)"; b.style.color="#fff"; } }
+}
+
+/* ============================ Demo data ============================ */
+function seedDemo() {
+  const ls = ["Alvarez","Brooks","Chen","Delacroix","Ellison","Fitzgerald","Grant","Huang","Iverson","Jackson","Kowalski","Lopez","Mbeki","Nguyen","Okafor","Patel","Quinn","Reyes","Sokolov","Turner"];
+  const fs = ["Marcus","Devon","Wei","Jean","Ray","Sean","Tyler","Ming","Kurt","Andre","Piotr","Luis","Kofi","Binh","Chidi","Anil","Riley","Diego","Ivan","Cole"];
+  const ranks = ["PVT","PV2","PFC","SPC","SPC","SPC","CPL","SGT","SGT","SSG"];
+  const mos = ["11B","11B","11C","68W","25U","92Y","11B","13F","11B","11C"];
+  const plats = S().platoons.filter(p=>p!=="HQ");
+  const sqs = S().squads;
+  const statuses = ["pdy","pdy","pdy","pdy","pdy","pdy","pdy","leave","tdy","appt","sick","detail","school","pass"];
+  DB.soldiers = [];
+  for (let i=0;i<20;i++) {
+    const readiness = {};
+    for (const req of S().requirements) {
+      if (!req.active) continue;
+      // vary: some current, some near due, some overdue
+      const roll = (i*7 + req.cycleDays) % 100;
+      const back = roll < 15 ? req.cycleDays + 20 : roll < 35 ? req.cycleDays - 10 : Math.floor(req.cycleDays*0.4);
+      readiness[req.id] = addDays(todayISO(), -back);
+    }
+    DB.soldiers.push({
+      id: uid("sol"), lastName: ls[i], firstName: fs[i], rank: ranks[i%ranks.length], mos: mos[i%mos.length],
+      platoon: plats[i%plats.length], squad: sqs[i%sqs.length], dutyStatus: statuses[i%statuses.length],
+      dodid: String(1000+i*37).slice(-4), phone:"", dateAssigned: addDays(todayISO(), -(200+i*15)),
+      notes:"", readiness,
+      statusReturn: ["leave","tdy","school"].includes(statuses[i%statuses.length]) ? addDays(todayISO(), 5+i%14) : "",
+    });
+  }
+  DB.tasks = [
+    { id:uid("task"), title:"Q3 Weapons Qual range", category:"Training", priority:"Priority", assignedTo:"", assignedText:"1st PLT", dueDate:addDays(todayISO(),5), status:"In Progress", notes:"Coordinate ammo & transport" },
+    { id:uid("task"), title:"NCOER — SGT Grant", category:"Admin", priority:"Immediate", assignedTo:DB.soldiers[6].id, dueDate:addDays(todayISO(),-2), status:"Open", notes:"Late — rater input needed" },
+    { id:uid("task"), title:"SHARP annual refresher", category:"Training", priority:"Routine", assignedTo:"", assignedText:"Company", dueDate:addDays(todayISO(),21), status:"Open", notes:"" },
+    { id:uid("task"), title:"Sensitive items layout", category:"Supply", priority:"Priority", assignedTo:"", assignedText:"All PLTs", dueDate:addDays(todayISO(),1), status:"Open", notes:"0900 motor pool" },
+    { id:uid("task"), title:"Reenlistment packet — SSG Turner", category:"Retention", priority:"Routine", assignedTo:DB.soldiers[19].id, dueDate:addDays(todayISO(),30), status:"Open", notes:"" },
+  ];
+  DB.counselings = [
+    { id:uid("cnsl"), soldierId:DB.soldiers[7].id, date:addDays(todayISO(),-3), type:"Event-Oriented", summary:"Late return from pass — corrective counseling." },
+    { id:uid("cnsl"), soldierId:DB.soldiers[0].id, date:addDays(todayISO(),-12), type:"Monthly Counseling", summary:"On track. Encouraged to pursue promotion board." },
+    { id:uid("cnsl"), soldierId:DB.soldiers[6].id, date:addDays(todayISO(),-30), type:"Initial Counseling", summary:"Squad leader responsibilities and expectations." },
+  ];
+  save(); render(); toast("Demo platoon loaded");
+}
+
+/* ============================ Theme ============================ */
+function applyTheme() {
+  const t = S().theme || "auto";
+  if (t === "auto") {
+    const dark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+  } else {
+    document.documentElement.setAttribute("data-theme", t);
+  }
+}
+window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { if(S().theme==="auto") applyTheme(); });
+
+/* ============================ Global event handling ============================ */
+document.addEventListener("click", (e) => {
+  const t = e.target.closest("[data-nav],[data-act],[data-mbtn],[data-close],[data-view-soldier],[data-edit-soldier],[data-del-soldier],[data-edit-task],[data-del-task],[data-edit-counseling],[data-del-counseling],[data-del-req],[data-del-status],[data-delchip],[data-theme-opt],[data-theme-seg]");
+  if (!t) return;
+
+  if (t.dataset.nav) { nav(t.dataset.nav); return; }
+  if (t.hasAttribute("data-close")) { closeModal(); return; }
+  if (t.dataset.mbtn != null) { const b = $("#modal")._buttons[+t.dataset.mbtn]; if (b && b.act) b.act(); return; }
+
+  if (t.dataset.viewSoldier) { soldierDetail(t.dataset.viewSoldier); return; }
+  if (t.dataset.editSoldier) { soldierForm(DB.soldiers.find(s=>s.id===t.dataset.editSoldier)); return; }
+  if (t.dataset.delSoldier) { const s=DB.soldiers.find(x=>x.id===t.dataset.delSoldier);
+    confirmModal("Remove Soldier?", `Remove ${soldierName(s)} from the roster? Their counseling entries will remain.`, ()=>{ DB.soldiers=DB.soldiers.filter(x=>x.id!==s.id); save(); render(); toast("Soldier removed"); }, true); return; }
+
+  if (t.dataset.editTask) { taskForm(DB.tasks.find(x=>x.id===t.dataset.editTask)); return; }
+  if (t.dataset.delTask) { confirmModal("Delete suspense?","This tasker will be removed.",()=>{ DB.tasks=DB.tasks.filter(x=>x.id!==t.dataset.delTask); save(); render(); }, true); return; }
+  if (t.dataset.editCounseling) { counselingForm(DB.counselings.find(x=>x.id===t.dataset.editCounseling)); return; }
+  if (t.dataset.delCounseling) { confirmModal("Delete entry?","This log entry will be removed.",()=>{ DB.counselings=DB.counselings.filter(x=>x.id!==t.dataset.delCounseling); save(); render(); }, true); return; }
+
+  if (t.dataset.delReq) { saveReqsFromDOM(); S().requirements=S().requirements.filter(r=>r.id!==t.dataset.delReq); save(); render(); return; }
+  if (t.dataset.delStatus) {
+    if (DB.soldiers.some(s=>s.dutyStatus===t.dataset.delStatus)) { toast("Status in use — reassign Soldiers first"); return; }
+    saveStatusesFromDOM(); S().dutyStatuses=S().dutyStatuses.filter(d=>d.id!==t.dataset.delStatus); save(); render(); return;
+  }
+  if (t.dataset.delchip) {
+    const [kind,val] = t.dataset.delchip.split("|");
+    const key = {rank:"ranks",platoon:"platoons",squad:"squads"}[kind];
+    S()[key] = S()[key].filter(v=>v!==val); save(); render(); return;
+  }
+  if (t.dataset.themeOpt) { S().theme = t.dataset.themeOpt; save(); applyTheme(); renderSettings($("#content")); return; }
+
+  handleAction(t.dataset.act);
+});
+
+function handleAction(act) {
+  switch (act) {
+    case "add-soldier": soldierForm(null); break;
+    case "add-task": taskForm(null); break;
+    case "add-counseling": counselingForm(null); break;
+    case "seed-demo":
+      if (DB.soldiers.length) confirmModal("Load demo data?","This replaces the current roster, suspenses, and logs with a sample platoon.",seedDemo,true);
+      else seedDemo();
+      break;
+    case "print": window.print(); break;
+    case "export": exportBackup(); break;
+    case "export-csv": exportCSV(); break;
+    case "import": $("#importFile").click(); break;
+    case "wipe": confirmModal("Clear ALL data?","This permanently erases the roster, readiness, suspenses, logs, and settings on this device. Export a backup first if unsure.",()=>{ DB=BLANK_DB(); save(); applyTheme(); render(); toast("All data cleared"); },true); break;
+    case "save-unit": {
+      const u=S().unit; u.name=$("#set_uname").value.trim(); u.uic=$("#set_uic").value.trim();
+      u.commander=$("#set_cdr").value.trim(); u.firstSergeant=$("#set_1sg").value.trim(); u.motto=$("#set_motto").value.trim();
+      save(); render(); toast("Unit info saved"); break;
+    }
+    case "save-reqs": saveReqsFromDOM(); save(); render(); toast("Requirements saved"); break;
+    case "add-req": {
+      const name=$("#nr_name").value.trim(); if(!name){toast("Name required");break;}
+      saveReqsFromDOM();
+      S().requirements.push({ id:uid("req"), name, abbr:($("#nr_abbr").value.trim()||name.slice(0,4)).toUpperCase(), cycleDays:Math.max(1,parseInt($("#nr_cycle").value)||365), amberDays:Math.max(0,parseInt($("#nr_amber").value)||60), active:true });
+      save(); renderSettings($("#content")); break;
+    }
+    case "save-statuses": saveStatusesFromDOM(); save(); render(); toast("Statuses saved"); break;
+    case "add-status": {
+      const name=$("#ns_name").value.trim(); if(!name){toast("Name required");break;}
+      saveStatusesFromDOM();
+      S().dutyStatuses.push({ id:uid("ds"), name, present:false, color:"#2a78d6" });
+      save(); renderSettings($("#content")); break;
+    }
+    case "add-rank": addToList("ranks", $("#add_rank").value.trim()); break;
+    case "add-plat": addToList("platoons", $("#add_plat").value.trim()); break;
+    case "add-squad": addToList("squads", $("#add_squad").value.trim()); break;
+    case "save-prefs": {
+      S().suspenseWarnDays = Math.max(1, parseInt($("#set_warn").value)||7);
+      save(); render(); toast("Preferences saved"); break;
+    }
+  }
+}
+function addToList(key, val) {
+  if (!val) return;
+  if (!S()[key].includes(val)) S()[key].push(val);
+  save(); renderSettings($("#content"));
+}
+
+$("#importFile") && document.addEventListener("change", (e) => {
+  if (e.target.id === "importFile" && e.target.files[0]) importBackup(e.target.files[0]);
+});
+$("#themeBtn").addEventListener("click", () => {
+  const order=["light","dark","auto"]; const cur=S().theme||"auto";
+  S().theme = order[(order.indexOf(cur)+1)%3]; save(); applyTheme(); if(DB.activeView==="settings") renderSettings($("#content")); toast("Theme: "+S().theme);
+});
+$("#menuToggle").addEventListener("click", () => $("#sidebar").classList.toggle("open"));
+$("#overlay").addEventListener("click", (e) => { if (e.target.id === "overlay") closeModal(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && $("#overlay").classList.contains("show")) closeModal(); });
+
+/* ============================ Boot ============================ */
+applyTheme();
+render();
+</script>
+</body>
+</html>
