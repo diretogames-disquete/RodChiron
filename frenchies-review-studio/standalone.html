@@ -389,7 +389,7 @@ const PROVIDERS = [
   { id: "anthropic", label: "Anthropic (Claude)", defaultBaseUrl: "https://api.anthropic.com", defaultModel: "claude-sonnet-5", models: ["claude-sonnet-5","claude-opus-4-8","claude-haiku-4-5"], needsBaseUrl: false, keyHint: "sk-ant-…", docs: "https://console.anthropic.com/", browserOk: true },
   { id: "openai", label: "OpenAI (GPT)", defaultBaseUrl: "https://api.openai.com/v1", defaultModel: "gpt-4o-mini", models: ["gpt-4o-mini","gpt-4o","gpt-4.1-mini","gpt-4.1"], needsBaseUrl: false, keyHint: "sk-…", docs: "https://platform.openai.com/api-keys", browserOk: false },
   { id: "google", label: "Google (Gemini)", defaultBaseUrl: "https://generativelanguage.googleapis.com/v1beta", defaultModel: "gemini-1.5-flash", models: ["gemini-1.5-flash","gemini-1.5-pro","gemini-2.0-flash"], needsBaseUrl: false, keyHint: "AIza…", docs: "https://aistudio.google.com/app/apikey", browserOk: true },
-  { id: "openai_compatible", label: "OpenAI-compatible (OpenRouter, Groq, DeepSeek, local…)", defaultBaseUrl: "", defaultModel: "", models: [], needsBaseUrl: true, keyHint: "provider key", baseUrlHint: "https://openrouter.ai/api/v1", docs: "https://openrouter.ai/keys", browserOk: true },
+  { id: "openai_compatible", label: "OpenAI-compatible (OpenRouter, Groq, DeepSeek, local…)", defaultBaseUrl: "", defaultModel: "", models: [], needsBaseUrl: true, keyHint: "provider key", baseUrlHint: "https://openrouter.ai/api/v1", modelHint: "e.g. openai/gpt-4o-mini", docs: "https://openrouter.ai/keys", browserOk: true },
 ];
 
 const OUTPUT_SCHEMA = {
@@ -498,7 +498,7 @@ function isConfigured(id) { const p = getProvider(id), c = resolveConfig(id); if
 function activeProvider() { const s = store(); if (s.active && isConfigured(s.active)) return s.active; return PROVIDERS.map((p) => p.id).find(isConfigured) || s.active || "anthropic"; }
 function anyConfigured() { return PROVIDERS.some((p) => isConfigured(p.id)); }
 function redacted() {
-  return PROVIDERS.map((p) => { const c = resolveConfig(p.id); return { id: p.id, label: p.label, needsBaseUrl: p.needsBaseUrl, models: p.models, defaultModel: p.defaultModel, keyHint: p.keyHint, baseUrlHint: p.baseUrlHint || "", docs: p.docs, browserOk: p.browserOk, configured: isConfigured(p.id), hasKey: Boolean(c.apiKey), last4: c.apiKey ? c.apiKey.slice(-4) : null, model: c.model, baseUrl: c.baseUrl }; });
+  return PROVIDERS.map((p) => { const c = resolveConfig(p.id); return { id: p.id, label: p.label, needsBaseUrl: p.needsBaseUrl, models: p.models, defaultModel: p.defaultModel, keyHint: p.keyHint, baseUrlHint: p.baseUrlHint || "", modelHint: p.modelHint || "", docs: p.docs, browserOk: p.browserOk, configured: isConfigured(p.id), hasKey: Boolean(c.apiKey), last4: c.apiKey ? c.apiKey.slice(-4) : null, model: c.model, baseUrl: c.baseUrl }; });
 }
 const num = (x) => (Number.isFinite(x) ? x : 0);
 function normUsage(u, kind) {
@@ -514,7 +514,15 @@ function estimateCost(model, usage) {
   return { input, output, total: input + output };
 }
 async function readJson(res) { const raw = await res.text(); try { return { raw, json: JSON.parse(raw) }; } catch { return { raw, json: null }; } }
-function apiErr(label, status, json, raw) { const m = (json && json.error && (json.error.message || json.error)) || (typeof json?.message === "string" && json.message) || raw || ("HTTP " + status); return `${label} error (${status}): ${typeof m === "string" ? m : JSON.stringify(m)}`; }
+function apiErr(label, status, json, raw) {
+  const m = (json && json.error && (json.error.message || json.error)) || (typeof json?.message === "string" && json.message) || raw || ("HTTP " + status);
+  let hint = "";
+  if (status === 401) hint = " — the API key looks wrong or inactive. Re-copy it under API keys.";
+  else if (status === 402 || /credit|insufficient|payment|quota/i.test(String(m))) hint = " — this looks like an out-of-credits issue. Add credits to your provider account, or pick a free model (e.g. a “:free” model on OpenRouter).";
+  else if (status === 400 || status === 404) hint = " — check the Model id. On OpenRouter it must be vendor/model, e.g. openai/gpt-4o-mini or google/gemini-flash-1.5.";
+  else if (status === 429) hint = " — rate limited; wait a moment and try again.";
+  return `${label} error (${status}): ${typeof m === "string" ? m : JSON.stringify(m)}${hint}`;
+}
 
 async function callProvider(id, { system, user, maxTokens = 3000, model }) {
   const p = getProvider(id); if (!p) return { ok: false, error: "Unknown provider: " + id };
@@ -723,8 +731,9 @@ function renderProviderList() {
       <div class="ptop"><label class="pradio"><input type="radio" name="activeProvider" value="${p.id}" ${p.id === active ? "checked" : ""} ${p.configured ? "" : "disabled"} /> ${esc(shortLabel(p))}</label>
         <span class="pstatus ${p.configured ? "ok" : ""}">${status}${cors}</span><a class="pdocs" href="${esc(p.docs)}" target="_blank" rel="noopener">get a key ↗</a></div>
       <div class="pfields">
+        ${p.needsBaseUrl ? `<div style="font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:2px">Fill in all three. For <b>OpenRouter</b>: Base URL <code>https://openrouter.ai/api/v1</code>; Model in <b>vendor/model</b> form like <code>openai/gpt-4o-mini</code> or <code>google/gemini-flash-1.5</code> (a plain <code>gpt-4o-mini</code> will be rejected).</div>` : ""}
         ${p.needsBaseUrl ? `<div class="frow"><label>Base URL</label><input type="text" data-field="baseUrl" placeholder="${esc(p.baseUrlHint || "https://…/v1")}" value="${esc(p.baseUrl || "")}" /></div>` : ""}
-        <div class="frow"><label>Model</label><input type="text" data-field="model" list="${p.id}Models" placeholder="${esc(p.defaultModel || "model id")}" value="${esc(p.model || "")}" /></div>
+        <div class="frow"><label>Model</label><input type="text" data-field="model" list="${p.id}Models" placeholder="${esc(p.modelHint || p.defaultModel || "model id")}" value="${esc(p.model || "")}" /></div>
         <div class="frow"><label>API key</label><input type="password" data-field="apiKey" autocomplete="off" placeholder="${p.hasKey ? "•••• saved — leave blank to keep" : esc(p.keyHint || "paste key")}" /><button class="btn save" data-save="${p.id}">Save</button>${p.hasKey ? `<button class="btn remove" data-remove="${p.id}">Remove</button>` : ""}</div>
       </div></div>`;
   }).join("");

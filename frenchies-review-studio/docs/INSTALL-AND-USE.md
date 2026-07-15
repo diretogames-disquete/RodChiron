@@ -129,7 +129,7 @@ The app runs on whichever provider you choose, so you control cost:
 | Anthropic (Claude) | console.anthropic.com | `claude-sonnet-5` | Also `claude-opus-4-8`, `claude-haiku-4-5`. |
 | OpenAI (GPT) | platform.openai.com/api-keys | `gpt-4o-mini` | Cheap default; also `gpt-4o`, `gpt-4.1`. |
 | Google (Gemini) | aistudio.google.com/app/apikey | `gemini-1.5-flash` | Very cheap. |
-| OpenAI-compatible | e.g. openrouter.ai/keys | — | Any endpoint speaking the OpenAI Chat Completions API — **OpenRouter, Groq, DeepSeek, Together, local**. Enter a base URL + key + model. Widest cost lever. |
+| OpenAI-compatible | e.g. openrouter.ai/keys | — | Any endpoint speaking the OpenAI Chat Completions API — **OpenRouter, Groq, DeepSeek, Together, local**. Enter a base URL + key + model. Widest cost lever. **OpenRouter needs all three:** base URL `https://openrouter.ai/api/v1`, and a model in **`vendor/model`** form (e.g. `openai/gpt-4o-mini`, `google/gemini-flash-1.5`) — a bare `gpt-4o-mini` is rejected. Paid models need credits, or use a `:free` model. |
 
 **Add / switch keys:** click **API keys** in the header. Per provider you can set
 the key, the model (free text with suggestions — type any model id), and (for
