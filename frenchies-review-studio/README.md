@@ -40,6 +40,27 @@ Then add at least one provider key — either in the app (click **API keys** in 
 top-right) or via `.env` (`cp .env.example .env`). Keys are read **server-side**
 and never sent to the browser.
 
+## Two ways to run it
+
+- **Server version (recommended): `npm start`** — the setup above. Your API key
+  stays on a small local server and never touches the browser. Full brand-file
+  editing.
+- **Single standalone file: `standalone.html`** — just double-click it; no Node,
+  no install. Everything runs in your browser. Because there's no server, the
+  model call goes **straight from your browser to the provider**, which means:
+  - Your API key is stored in **that browser** (localStorage) on your device.
+    Fine for a personal tool on your own machine — just don't host the file
+    publicly with a key saved.
+  - Calls are subject to **CORS**. **Anthropic, Google (Gemini), and
+    OpenAI-compatible providers (OpenRouter, Groq, DeepSeek, local) work well
+    in-browser; first-party OpenAI is often blocked by CORS** (the settings panel
+    flags this). If a provider is blocked, use the server version or route through
+    OpenRouter.
+  - The brand voice/exemplars/pricing are embedded in the file; the salon name,
+    price, and technician roster are editable in-app (Settings → Salon & voice),
+    and "Save as exemplar" persists in the browser. To change the voice
+    principles, edit the `BRAND_DEFAULT` block in the file's source.
+
 ## Providers & API keys (bring your own, switch anytime)
 
 Run the studio on whichever provider you want, so you control token costs:

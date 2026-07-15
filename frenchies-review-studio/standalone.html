@@ -1,0 +1,779 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Frenchies Review Studio — standalone</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23c06a4a'/%3E%3C/svg%3E" />
+<style>
+/* Frenchies Review Studio — clean, warm, unfussy. Clarity first. */
+:root {
+  --bg: #f6f3ee; --surface: #fffdf9; --surface-2: #f3efe7; --ink: #23201c; --ink-2: #6b6459;
+  --muted: #938b7d; --line: #e6ddcf; --line-strong: #d8ccb9; --accent: #c06a4a; --accent-ink: #ffffff;
+  --accent-soft: #f4e3da; --good: #2e7d55; --good-bg: #e5f1ea; --warn: #b0791a; --warn-bg: #f7edd6;
+  --crit: #b23b34; --crit-bg: #f7e2df; --radius: 14px;
+  --shadow: 0 1px 2px rgba(35,32,28,.05), 0 8px 24px rgba(35,32,28,.06);
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { font-family: var(--sans); background: var(--bg); color: var(--ink); font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+h1, h2, h3 { margin: 0; font-weight: 650; letter-spacing: -0.01em; }
+button { font-family: inherit; cursor: pointer; }
+.topbar { display: flex; align-items: center; gap: 12px; padding: 16px 24px; background: var(--surface); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 10; }
+.brandmark { display: flex; align-items: center; gap: 12px; }
+.brandmark .dot { width: 34px; height: 34px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #e29a7f, var(--accent)); box-shadow: inset 0 0 0 3px #fff, 0 2px 6px rgba(192,106,74,.35); }
+.brandmark h1 { font-size: 18px; }
+.brandmark .sub { margin: 0; font-size: 12.5px; color: var(--muted); }
+.providerbar { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.quickswitch { font-size: 12.5px; padding: 6px 8px; height: 32px; border-radius: 8px; max-width: 190px; }
+.providerchip { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink-2); background: var(--surface-2); border: 1px solid var(--line-strong); padding: 6px 11px; border-radius: 20px; font-weight: 600; }
+.providerchip:hover { background: var(--accent-soft); color: var(--accent); border-color: var(--accent-soft); }
+.providerchip .gear { opacity: .7; }
+.providerchip .pdot { width: 8px; height: 8px; border-radius: 50%; background: var(--good); box-shadow: 0 0 0 3px var(--good-bg); }
+.providerchip.warn { background: var(--warn-bg); color: var(--warn); border-color: color-mix(in srgb, var(--warn) 35%, transparent); }
+.providerchip.warn .pdot { background: var(--warn); box-shadow: 0 0 0 3px var(--warn-bg); animation: pulse 1.6s infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+.overlay { position: fixed; inset: 0; background: rgba(35,32,28,.5); backdrop-filter: blur(2px); display: none; align-items: flex-start; justify-content: center; z-index: 100; padding: 48px 16px; overflow-y: auto; }
+.overlay.show { display: flex; }
+.modal { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 20px 60px rgba(35,32,28,.28); width: 100%; max-width: 640px; }
+.modal .mh { display: flex; align-items: center; gap: 10px; padding: 18px 22px 0; }
+.modal .mh h3 { font-size: 17px; }
+.modal .mh .x { margin-left: auto; border: 0; background: none; font-size: 22px; color: var(--muted); line-height: 1; }
+.tabs { display: flex; gap: 4px; padding: 12px 22px 0; border-bottom: 1px solid var(--line); }
+.tabs button { border: 0; background: none; padding: 9px 12px; font-size: 13.5px; font-weight: 600; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.tabs button.active { color: var(--accent); border-bottom-color: var(--accent); }
+.modal .mb { padding: 18px 22px; }
+.modal .mf { display: flex; align-items: center; gap: 12px; padding: 14px 22px; border-top: 1px solid var(--line); background: var(--surface-2); border-radius: 0 0 16px 16px; }
+.modal .mf .muted { margin-right: auto; font-size: 12.5px; }
+.primary.sm { width: auto; margin: 0; padding: 9px 18px; font-size: 14px; }
+.lock { font-size: 12.5px; color: var(--ink-2); background: var(--good-bg); border: 1px solid color-mix(in srgb, var(--good) 25%, transparent); border-radius: 10px; padding: 11px 13px; margin: 0 0 16px; line-height: 1.5; }
+.lock.warn { background: var(--warn-bg); color: var(--warn); border-color: color-mix(in srgb, var(--warn) 30%, transparent); }
+.provlist { display: flex; flex-direction: column; gap: 12px; }
+.prow { border: 1px solid var(--line); border-radius: 12px; padding: 13px 14px; }
+.prow.active { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); background: color-mix(in srgb, var(--accent-soft) 40%, var(--surface)); }
+.prow .ptop { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.prow .pradio { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 650; color: var(--ink); cursor: pointer; }
+.prow .pradio input { width: 16px; height: 16px; accent-color: var(--accent); }
+.prow .pradio input:disabled { cursor: not-allowed; }
+.prow .pstatus { font-size: 12px; color: var(--muted); }
+.prow .pstatus.ok { color: var(--good); font-weight: 600; }
+.prow .pdocs { margin-left: auto; font-size: 12px; }
+.prow .pfields { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 11px; }
+.prow .frow { display: flex; gap: 8px; align-items: center; }
+.prow .frow label { min-width: 64px; font-size: 12px; color: var(--muted); font-weight: 600; }
+.prow input[type=text], .prow input[type=password] { flex: 1; height: 36px; font-size: 13.5px; }
+.prow .btn { border: 1px solid var(--line-strong); background: var(--surface); border-radius: 8px; padding: 8px 14px; font-size: 13px; font-weight: 600; color: var(--ink-2); white-space: nowrap; }
+.prow .btn:hover { background: var(--accent-soft); color: var(--accent); }
+.prow .btn.remove:hover { background: var(--crit-bg); color: var(--crit); border-color: var(--crit-bg); }
+.prow .btn.save { background: var(--accent); color: #fff; border-color: var(--accent); }
+.prow .btn.save:hover { background: #a95a3c; }
+.salongrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.salongrid .field { margin-top: 0; }
+.salongrid .full { grid-column: 1 / -1; }
+.layout { display: grid; grid-template-columns: 400px 1fr; gap: 22px; max-width: 1200px; margin: 22px auto; padding: 0 24px; align-items: start; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px; }
+.input { position: sticky; top: 88px; }
+.row.between { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+h2 { font-size: 15px; }
+label { font-size: 12.5px; color: var(--ink-2); font-weight: 600; }
+.ex { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: var(--ink-2); }
+.ex select { font-size: 12.5px; }
+textarea, input[type=text], input[type=password], input[type=number], select {
+  width: 100%; font-family: inherit; font-size: 14px; color: var(--ink);
+  background: var(--surface); border: 1px solid var(--line-strong); border-radius: 10px; padding: 10px 12px;
+}
+textarea { resize: vertical; line-height: 1.5; }
+input:focus, select:focus, textarea:focus, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+.field { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
+.field:first-child, .grid2 .field { margin-top: 0; }
+.field select + input { margin-top: 6px; }
+.field .fh { font-size: 11px; color: var(--muted); font-weight: 500; }
+.stars { display: flex; align-items: center; gap: 2px; }
+.stars button { background: none; border: 0; font-size: 24px; line-height: 1; color: var(--line-strong); padding: 0 1px; }
+.stars button.on { color: var(--accent); }
+.stars .clearstar { font-size: 14px; color: var(--muted); margin-left: 6px; }
+.stars .clearstar:hover { color: var(--crit); }
+.runwith { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; padding-top: 15px; border-top: 1px dashed var(--line-strong); }
+.runwith .field { margin-top: 0; }
+.usagebar { font-size: 12.5px; color: var(--ink-2); background: var(--surface-2); border: 1px solid var(--line); border-radius: 9px; padding: 9px 13px; margin-bottom: 14px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.usagebar b { color: var(--accent); }
+.usagebar .sep { color: var(--line-strong); }
+.usagebar .muted { color: var(--muted); }
+.usagebar .cost { font-weight: 650; color: var(--ink); }
+.primary { width: 100%; margin-top: 16px; background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 10px; padding: 12px; font-size: 15px; font-weight: 650; }
+.primary:hover { background: #a95a3c; }
+.primary:disabled { opacity: .6; cursor: default; }
+.hint { font-size: 12px; color: var(--muted); margin: 10px 0 0; text-align: center; }
+.results { min-height: 320px; position: relative; }
+.resultsHead { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+.meta { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.metaLabel { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.metaLabel select { width: auto; font-size: 13px; text-transform: none; letter-spacing: 0; color: var(--ink); font-weight: 600; padding: 6px 10px; }
+.techDetected { font-size: 13px; color: var(--ink-2); }
+.techDetected b { color: var(--accent); }
+.ghost { background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 8px; padding: 8px 12px; font-size: 13px; color: var(--ink-2); font-weight: 600; }
+.ghost:hover { background: var(--accent-soft); color: var(--accent); }
+.banner { border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; font-size: 13.5px; display: flex; gap: 10px; align-items: flex-start; background: var(--crit-bg); color: var(--crit); border: 1px solid color-mix(in srgb, var(--crit) 30%, transparent); }
+.banner b { display: block; }
+.rosterNote { border-radius: 10px; padding: 10px 14px; margin-bottom: 14px; font-size: 13px; background: var(--warn-bg); color: var(--warn); border: 1px solid color-mix(in srgb, var(--warn) 30%, transparent); }
+.cards { display: flex; flex-direction: column; gap: 14px; }
+.card { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); overflow: hidden; }
+.card.flagged { border-color: color-mix(in srgb, var(--crit) 35%, var(--line)); }
+.card .chead { display: flex; align-items: center; gap: 10px; padding: 11px 14px; background: var(--surface-2); border-bottom: 1px solid var(--line); }
+.card .angle { font-weight: 650; font-size: 13.5px; }
+.card .badge { font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; font-weight: 700; background: var(--crit-bg); color: var(--crit); padding: 3px 7px; border-radius: 20px; }
+.card .cbody { padding: 14px; }
+.card .response { width: 100%; border: 1px solid transparent; background: transparent; font-size: 14.5px; line-height: 1.55; color: var(--ink); border-radius: 8px; padding: 8px; resize: vertical; min-height: 76px; }
+.card .response:hover { background: var(--surface-2); }
+.card .response:focus { background: #fff; border-color: var(--line-strong); outline: 2px solid var(--accent); }
+.card .why { font-size: 12.5px; color: var(--ink-2); margin: 8px 4px 0; display: flex; gap: 6px; }
+.card .why .k { color: var(--muted); font-weight: 600; white-space: nowrap; }
+.card .cfoot { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-top: 1px solid var(--line); }
+.card .count { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; margin-right: auto; }
+.card .btn { border: 1px solid var(--line-strong); background: var(--surface); border-radius: 8px; padding: 7px 12px; font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
+.card .btn:hover { background: var(--accent-soft); color: var(--accent); border-color: var(--accent-soft); }
+.card .btn.copy.done { background: var(--good-bg); color: var(--good); border-color: var(--good-bg); }
+.flags { margin-top: 18px; border-top: 1px dashed var(--line-strong); padding-top: 16px; }
+.flags h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-2); margin-bottom: 10px; }
+.flags .muted { color: var(--muted); text-transform: none; letter-spacing: 0; font-weight: 500; }
+.flag { display: flex; gap: 10px; align-items: flex-start; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 13.5px; }
+.flag:last-child { border-bottom: 0; }
+.sev { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 3px 7px; border-radius: 20px; white-space: nowrap; margin-top: 1px; }
+.sev.low { background: var(--surface-2); color: var(--ink-2); }
+.sev.medium { background: var(--warn-bg); color: var(--warn); }
+.sev.high { background: var(--crit-bg); color: var(--crit); }
+.flag .fissue { font-weight: 600; }
+.flag .fnote { color: var(--ink-2); }
+.placeholder { text-align: center; color: var(--muted); padding: 40px 20px; }
+.ph-badge { width: 44px; height: 44px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; font-size: 20px; margin: 0 auto 12px; }
+.loading { display: flex; align-items: center; gap: 10px; color: var(--ink-2); padding: 30px 6px; font-size: 14px; }
+.spin { width: 16px; height: 16px; border: 2px solid var(--line-strong); border-top-color: var(--accent); border-radius: 50%; animation: sp .7s linear infinite; }
+@keyframes sp { to { transform: rotate(360deg); } }
+.errorBox { background: var(--crit-bg); color: var(--crit); border: 1px solid color-mix(in srgb, var(--crit) 30%, transparent); border-radius: 10px; padding: 12px 14px; font-size: 13.5px; }
+.errorBox button { margin-top: 10px; }
+.hidden { display: none !important; }
+.toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--ink); color: #fff; padding: 10px 18px; border-radius: 9px; font-size: 13.5px; opacity: 0; transition: .2s; pointer-events: none; z-index: 50; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+@media (max-width: 820px) { .layout { grid-template-columns: 1fr; } .input { position: static; } }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brandmark">
+    <span class="dot"></span>
+    <div>
+      <h1 id="salonName">Frenchies Review Studio</h1>
+      <p class="sub" id="salonSub">Review Response Studio</p>
+    </div>
+  </div>
+  <div class="providerbar">
+    <select id="quickSwitch" class="quickswitch hidden" title="Active provider"></select>
+    <button id="keysBtn" class="providerchip" title="Settings — API keys &amp; salon">
+      <span class="pdot" id="pdot"></span><span id="activeLabel">Settings</span><span class="gear">⚙</span>
+    </button>
+  </div>
+</header>
+
+<main class="layout">
+  <section class="panel input" aria-label="Review input">
+    <div class="row between">
+      <h2>The review</h2>
+      <label class="ex">Load example <select id="exampleSelect"><option value="">—</option></select></label>
+    </div>
+    <textarea id="reviewText" rows="7" placeholder="Paste the client review here…"></textarea>
+    <div class="grid2">
+      <div class="field">
+        <label>Star rating</label>
+        <div class="stars" id="stars" role="radiogroup" aria-label="Star rating">
+          <button type="button" data-star="1">★</button><button type="button" data-star="2">★</button>
+          <button type="button" data-star="3">★</button><button type="button" data-star="4">★</button>
+          <button type="button" data-star="5">★</button>
+          <button type="button" class="clearstar" id="clearStar" title="Clear">✕</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="optionCount">Options</label>
+        <select id="optionCount"><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option></select>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="field">
+        <label for="techSelect">Technician (optional)</label>
+        <select id="techSelect"><option value="">— none / detect —</option></select>
+        <input id="techFree" type="text" placeholder="…or type a name" />
+      </div>
+      <div class="field">
+        <label for="platformSelect">Platform (optional)</label>
+        <select id="platformSelect"><option value="">—</option></select>
+      </div>
+    </div>
+    <div class="field">
+      <label for="contextNote">Context notes (optional)</label>
+      <input id="contextNote" type="text" placeholder="e.g. regular client · resolved offline · first visit" />
+    </div>
+    <div class="runwith hidden" id="runWith">
+      <div class="field"><label for="runProvider">Run this with</label><select id="runProvider"></select></div>
+      <div class="field"><label for="runModel">Model</label><input id="runModel" type="text" list="runModels" placeholder="model id" /><datalist id="runModels"></datalist></div>
+    </div>
+    <button id="generateBtn" class="primary">Generate responses</button>
+    <p class="hint">Nothing is posted automatically. You always pick and can edit before using anything.</p>
+  </section>
+
+  <section class="panel results" aria-label="Generated responses">
+    <div id="resultsHead" class="resultsHead hidden">
+      <div class="meta">
+        <label class="metaLabel">Detected type <select id="typeSelect"></select></label>
+        <span class="techDetected" id="techDetected"></span>
+      </div>
+      <button id="regenBtn" class="ghost">↻ Regenerate</button>
+    </div>
+    <div id="humanBanner" class="banner hidden"></div>
+    <div id="rosterNote" class="rosterNote hidden"></div>
+    <div id="usageBar" class="usagebar hidden"></div>
+    <div id="cards" class="cards"></div>
+    <div id="flagsPanel" class="flags hidden">
+      <h3>Operational flags <span class="muted">(for you — not part of the reply)</span></h3>
+      <div id="flagsList"></div>
+    </div>
+    <div id="placeholder" class="placeholder">
+      <div class="ph-badge">✦</div>
+      <p>Paste a review and a star rating, then <b>Generate</b>.<br />
+      You'll get a few genuinely different response options — each with a one-line "why this angle."</p>
+    </div>
+    <div id="loading" class="loading hidden"><span class="spin"></span> Writing in the house voice…</div>
+    <div id="errorBox" class="errorBox hidden"></div>
+  </section>
+</main>
+
+<!-- Settings modal: API keys + Salon -->
+<div class="overlay" id="keysOverlay" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="mh"><h3 id="keysTitle">Settings</h3><button class="x" id="keysClose" aria-label="Close">×</button></div>
+    <div class="tabs">
+      <button data-tab="keys" class="active">API keys</button>
+      <button data-tab="salon">Salon &amp; voice</button>
+    </div>
+    <div class="mb" id="tabKeys">
+      <p class="lock" id="keyLock">🔒 This is a standalone file with no server, so keys are stored in <b>this browser</b> (localStorage) on this device and sent straight to the provider you run — nowhere else. Keep this file to yourself; don't host it publicly with keys saved. After saving, only the last 4 digits show.</p>
+      <div id="provList" class="provlist"></div>
+    </div>
+    <div class="mb hidden" id="tabSalon">
+      <p class="lock">These fields anchor the voice and value-defense replies. <b>Price</b> is the one most worth keeping current. Voice principles and exemplars are embedded in this file (edit the <code>BRAND</code> block in the source to change them); responses you "Save as exemplar" are added automatically.</p>
+      <div class="salongrid">
+        <div class="field"><label>Salon name</label><input id="sfName" type="text"></div>
+        <div class="field"><label>City</label><input id="sfCity" type="text"></div>
+        <div class="field"><label>Price point (USD)</label><input id="sfPrice" type="number" min="0"></div>
+        <div class="field"><label>Sign-off (optional)</label><input id="sfSignoff" type="text"></div>
+        <div class="field full"><label>Technicians (one per line)</label><textarea id="sfTechs" rows="5"></textarea></div>
+      </div>
+      <div style="margin-top:14px;display:flex;gap:10px;align-items:center">
+        <button class="primary sm" id="salonSave">Save salon settings</button>
+        <button class="ghost" id="salonReset">Reset to defaults</button>
+      </div>
+    </div>
+    <div class="mf"><span class="muted" id="activeHint"></span><button class="primary sm" id="keysDone">Done</button></div>
+  </div>
+</div>
+
+<datalist id="anthropicModels"></datalist>
+<datalist id="openaiModels"></datalist>
+<datalist id="googleModels"></datalist>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* =====================================================================
+   Frenchies Review Studio — STANDALONE (single file, no server).
+   The model call runs in your browser. Your API key lives in this
+   browser's localStorage and goes only to the provider you choose.
+   ===================================================================== */
+
+/* ---------------- Embedded brand config (edit here to change the voice) ---- */
+const BRAND_DEFAULT = {
+  salon: {
+    name: "Frenchies Modern Nail Care", city: "Winston-Salem, NC", price_point_usd: 80,
+    sterilization: ["autoclave", "single-use files"], uses_uv_lamps: true, doctor_recommended: true,
+    no_acrylics: true, no_jetted_tubs: true, low_odor: true, signoff: "— The Frenchies Team",
+  },
+  technicians: [
+    { name: "Danesha", archetype: "Quality Anchor", note: "" },
+    { name: "Jae", archetype: "First-Visit Converter", note: "" },
+    { name: "Selena", archetype: "", note: "Handle carefully — mixed public profile; responses should help build a more positive presence." },
+    { name: "Amber", archetype: "", note: "" },
+    { name: "Rheanna", archetype: "", note: "" },
+    { name: "K'mille", archetype: "", note: "" },
+    { name: "Arleen", archetype: "", note: "" },
+    { name: "Cali", archetype: "", note: "" },
+    { name: "Camille", archetype: "", note: "" },
+  ],
+  voice: `# Frenchies — Brand Voice Principles
+1. Match the energy. A six-word review gets a short reply; a paragraph earns a fuller one. Over-responding to a short rave reads as corporate.
+2. Anchor on the key phrase. Find the single strongest word/phrase and reflect it back (quote it lightly).
+3. Name the technician when the reviewer does, framed personally ("Rheanna is meticulous by nature"), never "our staff member."
+4. Never copy-paste. Every response is unique. Rotate openers — no two options for one review start the same way.
+5. For negatives: own what's fair, correct calmly, never attack. You're writing for the ~50 prospective clients who'll read this later.
+6. For legacy/old reviews: "the salon has changed." Draw a line between eras without throwing anyone under the bus.
+7. Differentiate positively. Weave in what makes Frenchies distinct (natural-nail health focus, autoclave sterilization, single-use files, doctor-recommended, no acrylics, no jetted tubs) as a statement about US, never a jab, used sparingly.
+8. Health-adjacent language stays soft ("gentler on the natural nail"; "many expecting clients choose us for our low-odor approach — always check with your doctor"). No absolute medical claims.
+9. Restraint reads as confidence. Not every reply needs a sales ask; when one fits, keep it light.
+10. Integrity above all. Real numbers only, no invented specifics, no fabricated enthusiasm.
+
+The sound: open by reacting to the reviewer's own words (never "Thank you for your feedback"); quote their strongest phrase; give the tech a character trait, not a generic compliment; let differentiators be quiet asides, never lectures; stay human and faintly witty; protect the reviewer's dignity — say less.
+
+Hard never: no gratitude clichés ("Thank you for your kind words!", "We appreciate your feedback!"); no competitor comparisons/attacks; no unsupported health claims; no invented details/prices/staff/numbers.`,
+  exemplars: [
+    `## Exemplar 1 — Short positive, technician named
+> Review (5★): "Love my mani! Amber is fab!"
+> Response: "She really is. Thanks for the love — Amber will be thrilled to see this, and we'll see you next time!"
+> Moves: matches six-word energy; opens by agreeing rather than thanking; names Amber personally; light rebook close.`,
+    `## Exemplar 2 — Detailed positive, technician named, product-curious
+> Review (5★): "Very impressed with pedicure — my best ever! Rheanna was thorough, used products I haven't had used on my feet. Polish looks great and my feet feel amazing!"
+> Response: "\\"My best ever\\" is a high bar and we're honored to hold it. Rheanna is meticulous by nature, and noticing the products is a real compliment — we're intentional about what we use and how we care for the natural nail, so it means a lot that you felt the difference. Enjoy those feet, and come see us again soon."
+> Moves: anchors on the quoted key phrase; gives Rheanna a character trait; weaves the natural-nail differentiator as a light aside.`,
+    `## Exemplar 3 — Short positive, no technician, values-anchored
+> Review (5★): "Clean, friendly staff, great products!"
+> Response: "Clean listed first — that's the one we work hardest for. Thank you for noticing all three."
+> Moves: no tech to name, so it anchors on content; homes in on "clean"; two sentences, no sales ask.`,
+    `## Exemplar 4 — First-visit convert, no technician, plays off humor
+> Review (5★): "I'm a 72-year-old guy and it's getting harder to trim my toenails. Frenchies was recommended for my father-in-law but I thought I would go ahead 'for him.' It was worth it. I'll be back."
+> Response: "Coming in \\"for him\\" — your secret's safe with us. Honestly, this is exactly the kind of care that gets harder to do for yourself and shouldn't have to be, so we're glad you talked yourself into it. \\"I'll be back\\" might be our favorite three words in any review — see you then."
+> Moves: plays along with the joke; acknowledges his real reason without leaning on age or turning clinical; keeps his dignity intact.`,
+  ],
+  library: `# Response library
+Opener rotation (never reuse the same opener across a review's options): agree with them; quote their strongest phrase; zero in on one word; play along with their framing; name the feeling; own it plainly (negatives); mark the era (legacy).
+
+Multi-angle strategy:
+- Short/Medium Positive → (A) warm mirror matching brevity · (B) technician-forward, leaning on the named tech's archetype · (C) light rebook nudge, or a testimonial invitation if praise is strong.
+- Detailed Positive → (A) anchor-on-the-key-phrase · (B) differentiator-woven (light) · (C) testimonial-invitation (note: get consent before using their words in marketing).
+- Mixed → (A) praise-first then own-and-fix · (B) concise acknowledge + move to a private channel · (C) "this isn't our standard" + genuine invitation to make it right. All own the complaint; none defend price.
+- Negative – Service/Communication → (A) full accountability + one concrete corrective step · (B) brief + take it offline · (C) "not the standard we hold" + invitation to return. All flagged for human review.
+- Negative – Pricing → angles differ in how they frame value; reference the care carefully, never defensively, never "you get what you pay for."
+- Legacy/Resolved → angles differ in how strongly they signal change vs. thank-for-patience.`,
+  operationalFlags: `# Operational flags (internal only). Severity low/medium/high.
+- Extension/enhancement durability (polish/gel/dip lifting early) — low–medium
+- Service completeness (steps skipped/rushed) — medium
+- Timing/wait (long waits, running behind) — medium
+- Booking/communication (unreturned messages, rudeness at desk) — medium–high
+- Cleanliness/sanitation concern — high
+- Injury/health harm (cut, infection, reaction, pain) — high
+- Technician-specific pattern (same tech across complaints) — medium–high
+- Product/allergy reaction — medium
+- Accessibility/comfort (seating, mobility, odor) — low–medium`,
+};
+
+/* Editable price table (USD per 1,000,000 tokens). Add any model id you use. */
+const PRICES = {
+  "claude-sonnet-5": { input: 3, output: 15 }, "claude-opus-4-8": { input: 5, output: 25 }, "claude-haiku-4-5": { input: 1, output: 5 },
+  "gpt-4o-mini": { input: 0.15, output: 0.6 }, "gpt-4o": { input: 2.5, output: 10 }, "gpt-4.1-mini": { input: 0.4, output: 1.6 }, "gpt-4.1": { input: 2, output: 8 },
+  "gemini-1.5-flash": { input: 0.075, output: 0.3 }, "gemini-1.5-pro": { input: 1.25, output: 5 }, "gemini-2.0-flash": { input: 0.1, output: 0.4 },
+};
+
+const PROVIDERS = [
+  { id: "anthropic", label: "Anthropic (Claude)", defaultBaseUrl: "https://api.anthropic.com", defaultModel: "claude-sonnet-5", models: ["claude-sonnet-5","claude-opus-4-8","claude-haiku-4-5"], needsBaseUrl: false, keyHint: "sk-ant-…", docs: "https://console.anthropic.com/", browserOk: true },
+  { id: "openai", label: "OpenAI (GPT)", defaultBaseUrl: "https://api.openai.com/v1", defaultModel: "gpt-4o-mini", models: ["gpt-4o-mini","gpt-4o","gpt-4.1-mini","gpt-4.1"], needsBaseUrl: false, keyHint: "sk-…", docs: "https://platform.openai.com/api-keys", browserOk: false },
+  { id: "google", label: "Google (Gemini)", defaultBaseUrl: "https://generativelanguage.googleapis.com/v1beta", defaultModel: "gemini-1.5-flash", models: ["gemini-1.5-flash","gemini-1.5-pro","gemini-2.0-flash"], needsBaseUrl: false, keyHint: "AIza…", docs: "https://aistudio.google.com/app/apikey", browserOk: true },
+  { id: "openai_compatible", label: "OpenAI-compatible (OpenRouter, Groq, DeepSeek, local…)", defaultBaseUrl: "", defaultModel: "", models: [], needsBaseUrl: true, keyHint: "provider key", baseUrlHint: "https://openrouter.ai/api/v1", docs: "https://openrouter.ai/keys", browserOk: true },
+];
+
+const OUTPUT_SCHEMA = {
+  type: "object", additionalProperties: false,
+  properties: {
+    detected_type: { type: "string" }, technician: { type: ["string","null"] }, needs_human_review: { type: "boolean" }, sensitivity_reason: { type: ["string","null"] },
+    options: { type: "array", items: { type: "object", additionalProperties: false, properties: { angle: { type: "string" }, response: { type: "string" }, rationale: { type: "string" }, char_count: { type: "integer" } }, required: ["angle","response","rationale","char_count"] } },
+    operational_flags: { type: "array", items: { type: "object", additionalProperties: false, properties: { issue: { type: "string" }, severity: { type: "string", enum: ["low","medium","high"] }, note: { type: "string" } }, required: ["issue","severity","note"] } },
+    roster_note: { type: ["string","null"] },
+  },
+  required: ["detected_type","technician","needs_human_review","sensitivity_reason","options","operational_flags","roster_note"],
+};
+const REVIEW_TYPES = ["Wordless Star","Short Positive","Medium Positive","Detailed Positive","Mixed","Negative – Service","Negative – Communication","Negative – Pricing","Negative – Hostile","Legacy Unanswered","Resolved/Updated"];
+
+const FIXTURES = [
+  { label: "1 · Short positive, names Amber", review: "Love my mani! Amber is fab!", rating: 5, technician: "Amber", platform: "Google" },
+  { label: "2 · Detailed positive, Rheanna, products", review: "Very impressed with pedicure — my best ever! Rheanna was thorough, used products I haven't had used on my feet. Polish looks great and my feet feel amazing!", rating: 5, technician: "Rheanna", platform: "Google" },
+  { label: "3 · Short positive, anchor on 'clean'", review: "Clean, friendly staff, great products!", rating: 5, technician: "", platform: "Yelp" },
+  { label: "4 · First-visit convert, 72-year-old", review: "I'm a 72-year-old guy and it's getting harder to trim my toenails. Frenchies was recommended for my father-in-law but I thought I would go ahead 'for him.' It was worth it. I'll be back.", rating: 5, technician: "", platform: "Google", context: "First visit" },
+  { label: "5 · Pricing complaint ($80 mani)", review: "$80 for a mani is steep. It looked nice but I don't think I'll be back at that price.", rating: 3, technician: "", platform: "Yelp" },
+  { label: "6 · Hostile / BBB mention", review: "WORST experience of my life. The staff were rude and dismissive and I felt disrespected the entire time. I am filing a complaint with the BBB and telling everyone I know to stay away.", rating: 1, technician: "", platform: "Google" },
+  { label: "7 · Misdirected (waxing / male front-desk)", review: "Booked a Brazilian wax and the guy at the front desk was super unprofessional. The waxing room wasn't ready and I waited 40 minutes. Never coming back for a wax here.", rating: 2, technician: "", platform: "Facebook" },
+];
+
+/* ---------------- localStorage store ---------------- */
+const LS_KEY = "frenchies_studio_standalone_v1";
+function loadStore() {
+  try { return JSON.parse(localStorage.getItem(LS_KEY)) || {}; } catch { return {}; }
+}
+function saveStore(s) { try { localStorage.setItem(LS_KEY, JSON.stringify(s)); } catch (e) { toast("Couldn't save (browser storage blocked?)"); } }
+function store() { const s = loadStore(); s.providers = s.providers || {}; s.savedExemplars = s.savedExemplars || []; return s; }
+
+/* ---------------- brand (defaults + salon/tech overrides) ---------------- */
+function loadBrand() {
+  const s = store();
+  const salon = Object.assign({}, BRAND_DEFAULT.salon, s.salon || {});
+  const technicians = Array.isArray(s.technicians) && s.technicians.length
+    ? s.technicians.map((name) => { const d = BRAND_DEFAULT.technicians.find((t) => t.name === name); return d || { name, archetype: "", note: "" }; })
+    : BRAND_DEFAULT.technicians;
+  const exemplars = [...BRAND_DEFAULT.exemplars, ...(s.savedExemplars || [])].slice(-8);
+  return { salon, technicians, voice: BRAND_DEFAULT.voice, library: BRAND_DEFAULT.library, operationalFlags: BRAND_DEFAULT.operationalFlags, exemplars };
+}
+
+/* ---------------- system + user prompt ---------------- */
+function rosterBlock(techs) {
+  if (!techs || !techs.length) return "(no roster on file)";
+  return techs.map((t) => { const p = [`- ${t.name}`]; if (t.archetype) p.push(`archetype: ${t.archetype}`); if (t.note) p.push(`note: ${t.note}`); return p.join(" — "); }).join("\n");
+}
+function buildSystemPrompt(brand) {
+  const salon = brand.salon || {};
+  const s = [];
+  s.push(`You are the review-response writer for ${salon.name || "this salon"}${salon.city ? " in " + salon.city : ""}. You draft replies to client reviews in this salon's specific, human voice — not a generic auto-responder. For each review you return an ARRAY of 2–4 distinct, ready-to-post response options that differ in STRATEGY and TONE (not just wording), each with a one-line rationale, plus any operational flags the review reveals.`);
+  s.push(`# Integrity — non-negotiable\nNever invent visit details, prices, staff names, numbers, or facts not present in the review or the salon facts below. When tempted to assert something you can't verify, leave it out (surface it as an operational flag if relevant). No fabricated enthusiasm. Real numbers only.`);
+  s.push(`# Salon facts (the only facts you may assert)\n\`\`\`json\n${JSON.stringify(salon, null, 2)}\n\`\`\``);
+  if (brand.voice) s.push(`# Brand voice — follow these exactly\n${brand.voice.trim()}`);
+  if (brand.exemplars && brand.exemplars.length) s.push(`# House voice — approved exemplars (the gold standard to EMULATE, never copy)\nEmulate their moves; never reuse their words.\n\n${brand.exemplars.join("\n\n")}`);
+  s.push(`# Technician roster (never invent a technician)\n${rosterBlock(brand.technicians)}`);
+  s.push(`# Review classification (run this first)\nClassify the review as exactly one of: ${REVIEW_TYPES.join(", ")}. Use it to size and shape the reply.\n- Wordless Star: 1 line (+ tech name if known).\n- Short Positive (3–8 words): 1 sentence, match brevity.\n- Medium Positive (2–4 sentences): 2–3 sentences.\n- Detailed Positive (paragraph+): 3–4 sentences, anchor on the strongest phrase.\n- Mixed: address each, praise first, own the fair part, never defend price.\n- Negative – Service: short, own what's fair, correct calmly.\n- Negative – Communication: full accountability, name the failure.\n- Negative – Pricing: acknowledge value perception; never defend the number.\n- Negative – Hostile: FLAG for human review; factual, spine, no grovel.\n- Legacy Unanswered: signal "responding late" and "the salon has changed."\n- Resolved/Updated: honor the arc from problem to fix.`);
+  if (brand.library) s.push(`# Response library & opener banks\n${brand.library.trim()}`);
+  s.push(`# Sensitive-case handling (must-have)\nBefore writing, screen the review. If it involves ANY of: hostility/abuse; a BBB, legal, attorney, or lawsuit mention; an injury or health-harm claim; an accusation of unsanitary practice; OR appears meant for a DIFFERENT business (mentions services this salon does not offer, e.g. waxing/hair, or staff/traits inconsistent with the salon) — then set "needs_human_review": true and put the reason in "sensitivity_reason". Still provide draft options, but keep them factual and calm, never confident/auto-postable. For a likely misdirected review, offer a gentle "we think this may have been intended for another salon" draft.`);
+  if (brand.operationalFlags) s.push(`# Operational flags to watch for (internal only)\n${brand.operationalFlags.trim()}`);
+  s.push(`# Output contract — CRITICAL\nReturn ONLY a single valid JSON object, no markdown fences, no preamble. Shape:\n{\n  "detected_type": "<one of the classification types>",\n  "technician": "<name if the reviewer named one and it's usable, else null>",\n  "needs_human_review": <true|false>,\n  "sensitivity_reason": "<why, if needs_human_review, else null>",\n  "options": [ { "angle": "<short label>", "response": "<ready-to-post text>", "rationale": "<one line: why this angle>", "char_count": <int> } ],\n  "operational_flags": [ { "issue": "<systemic issue>", "severity": "low|medium|high", "note": "<owner-facing note>" } ],\n  "roster_note": "<'New name detected — add <name> to roster?' if a review named a tech NOT on the roster, else null>"\n}\nRules: options must be strategically distinct and open differently; responses must read like the approved exemplars (react to the reviewer's specific words, quote their strongest phrase, give a named tech a character trait, keep differentiators as light asides, never open with "Thank you for your feedback"); never use gratitude clichés; never compare to or attack competitors; never make unsupported health claims; never defend the price on a pricing complaint; set char_count to the length of "response". Sign-off optional and light — do not staple "${salon.signoff || ""}" onto every reply.`);
+  return s.join("\n\n");
+}
+function buildUserMessage(input) {
+  const n = Math.min(4, Math.max(2, Number(input.count) || 3));
+  const lines = [`Generate ${n} strategically distinct response options for this review.`, ""];
+  lines.push(`Star rating: ${input.rating != null && input.rating !== "" ? input.rating + "/5" : "(not provided)"}`);
+  if (input.platform) lines.push(`Platform: ${input.platform}`);
+  if (input.technician) lines.push(`Owner note — technician on this visit: ${input.technician}`);
+  if (input.context) lines.push(`Owner context: ${input.context}`);
+  lines.push(`Today's date: ${new Date().toISOString().slice(0, 10)}`);
+  lines.push("", "Review text:", '"""', (input.review || "").trim() || "(no text — rating only)", '"""', "", `Return exactly ${n} options in the required JSON shape. JSON only.`);
+  return lines.join("\n");
+}
+
+/* ---------------- parse + normalize ---------------- */
+function parseModelJson(text) {
+  if (typeof text !== "string" || !text.trim()) return { ok: false, error: "Empty response from the model." };
+  let t = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+  if (!t.startsWith("{")) { const a = t.indexOf("{"), b = t.lastIndexOf("}"); if (a !== -1 && b > a) t = t.slice(a, b + 1); }
+  try { return { ok: true, data: JSON.parse(t) }; } catch (e) { return { ok: false, error: "Could not parse model output as JSON: " + e.message }; }
+}
+function normalizeResult(o) {
+  o = o && typeof o === "object" ? o : {};
+  const opts = Array.isArray(o.options) ? o.options : [];
+  return {
+    detected_type: typeof o.detected_type === "string" ? o.detected_type : "Unknown",
+    technician: typeof o.technician === "string" && o.technician.trim() ? o.technician : null,
+    needs_human_review: o.needs_human_review === true,
+    sensitivity_reason: typeof o.sensitivity_reason === "string" && o.sensitivity_reason.trim() ? o.sensitivity_reason : null,
+    options: opts.map((op) => { const r = typeof op?.response === "string" ? op.response : ""; return { angle: typeof op?.angle === "string" ? op.angle : "Option", response: r, rationale: typeof op?.rationale === "string" ? op.rationale : "", char_count: Number.isFinite(op?.char_count) ? op.char_count : r.length }; }),
+    operational_flags: Array.isArray(o.operational_flags) ? o.operational_flags.filter((f) => f && typeof f === "object").map((f) => ({ issue: typeof f.issue === "string" ? f.issue : "", severity: ["low","medium","high"].includes(f.severity) ? f.severity : "low", note: typeof f.note === "string" ? f.note : "" })) : [],
+    roster_note: typeof o.roster_note === "string" && o.roster_note.trim() ? o.roster_note : null,
+  };
+}
+
+/* ---------------- provider config + calls (browser-side) ---------------- */
+function getProvider(id) { return PROVIDERS.find((p) => p.id === id) || null; }
+function resolveConfig(id) {
+  const p = getProvider(id); if (!p) return null;
+  const c = store().providers[id] || {};
+  return { id, apiKey: c.apiKey || "", baseUrl: (c.baseUrl || p.defaultBaseUrl || "").replace(/\/+$/, ""), model: c.model || p.defaultModel || "", label: p.label };
+}
+function isConfigured(id) { const p = getProvider(id), c = resolveConfig(id); if (!p || !c) return false; if (p.needsBaseUrl && !c.baseUrl) return false; return Boolean(c.apiKey && c.model); }
+function activeProvider() { const s = store(); if (s.active && isConfigured(s.active)) return s.active; return PROVIDERS.map((p) => p.id).find(isConfigured) || s.active || "anthropic"; }
+function anyConfigured() { return PROVIDERS.some((p) => isConfigured(p.id)); }
+function redacted() {
+  return PROVIDERS.map((p) => { const c = resolveConfig(p.id); return { id: p.id, label: p.label, needsBaseUrl: p.needsBaseUrl, models: p.models, defaultModel: p.defaultModel, keyHint: p.keyHint, baseUrlHint: p.baseUrlHint || "", docs: p.docs, browserOk: p.browserOk, configured: isConfigured(p.id), hasKey: Boolean(c.apiKey), last4: c.apiKey ? c.apiKey.slice(-4) : null, model: c.model, baseUrl: c.baseUrl }; });
+}
+const num = (x) => (Number.isFinite(x) ? x : 0);
+function normUsage(u, kind) {
+  if (!u || typeof u !== "object") return null;
+  if (kind === "openai") { const i = num(u.prompt_tokens), o = num(u.completion_tokens); return { input: i, output: o, total: num(u.total_tokens) || i + o }; }
+  if (kind === "google") { const i = num(u.promptTokenCount), o = num(u.candidatesTokenCount); return { input: i, output: o, total: num(u.totalTokenCount) || i + o }; }
+  const i = num(u.input_tokens) + num(u.cache_read_input_tokens) + num(u.cache_creation_input_tokens), o = num(u.output_tokens);
+  return { input: i, output: o, total: i + o };
+}
+function estimateCost(model, usage) {
+  if (!usage) return null; const p = PRICES[model]; if (!p) return null;
+  const input = (num(usage.input) / 1e6) * p.input, output = (num(usage.output) / 1e6) * p.output;
+  return { input, output, total: input + output };
+}
+async function readJson(res) { const raw = await res.text(); try { return { raw, json: JSON.parse(raw) }; } catch { return { raw, json: null }; } }
+function apiErr(label, status, json, raw) { const m = (json && json.error && (json.error.message || json.error)) || (typeof json?.message === "string" && json.message) || raw || ("HTTP " + status); return `${label} error (${status}): ${typeof m === "string" ? m : JSON.stringify(m)}`; }
+
+async function callProvider(id, { system, user, maxTokens = 3000, model }) {
+  const p = getProvider(id); if (!p) return { ok: false, error: "Unknown provider: " + id };
+  const base = resolveConfig(id); const cfg = Object.assign({}, base, { model: (model && String(model).trim()) || base.model });
+  if (!cfg.apiKey) return { ok: false, error: `No API key for ${p.label}. Add one under Settings → API keys.` };
+  if (p.needsBaseUrl && !cfg.baseUrl) return { ok: false, error: `${p.label} needs a base URL.` };
+  if (!cfg.model) return { ok: false, error: `No model set for ${p.label}.` };
+  try {
+    if (id === "anthropic") return await callAnthropic(cfg, { system, user, maxTokens });
+    if (id === "google") return await callGoogle(cfg, { system, user, maxTokens });
+    return await callOpenAILike(id, cfg, { system, user, maxTokens });
+  } catch (e) {
+    // Browser fetch failures (incl. CORS) surface as a generic TypeError.
+    return { ok: false, error: `Couldn't reach ${p.label} from the browser (network or CORS). Anthropic, Google, and OpenAI-compatible providers like OpenRouter work best in-browser; first-party OpenAI may be blocked. Details: ${e.message}` };
+  }
+}
+async function callAnthropic(cfg, { system, user, maxTokens }) {
+  const res = await fetch(cfg.baseUrl + "/v1/messages", {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-api-key": cfg.apiKey, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
+    body: JSON.stringify({ model: cfg.model, max_tokens: maxTokens, system, messages: [{ role: "user", content: user }], output_config: { format: { type: "json_schema", schema: OUTPUT_SCHEMA } } }),
+  });
+  const { raw, json } = await readJson(res);
+  if (!res.ok) return { ok: false, error: apiErr("Anthropic", res.status, json, raw) };
+  if (json?.stop_reason === "refusal") return { ok: false, error: "The model declined this request. Review it manually." };
+  const text = (Array.isArray(json?.content) ? json.content : []).filter((b) => b?.type === "text").map((b) => b.text).join("");
+  return { ok: true, text, usage: normUsage(json?.usage, "anthropic"), model: cfg.model };
+}
+async function callOpenAILike(id, cfg, { system, user, maxTokens }) {
+  const body = { model: cfg.model, max_tokens: maxTokens, messages: [{ role: "system", content: system }, { role: "user", content: user }] };
+  if (id === "openai") body.response_format = { type: "json_object" };
+  const res = await fetch(cfg.baseUrl + "/chat/completions", { method: "POST", headers: { "content-type": "application/json", authorization: "Bearer " + cfg.apiKey }, body: JSON.stringify(body) });
+  const { raw, json } = await readJson(res);
+  const label = id === "openai" ? "OpenAI" : "Provider";
+  if (!res.ok) return { ok: false, error: apiErr(label, res.status, json, raw) };
+  const ch = json?.choices?.[0];
+  const text = typeof ch?.message?.content === "string" ? ch.message.content : "";
+  return { ok: true, text, usage: normUsage(json?.usage, "openai"), model: cfg.model };
+}
+async function callGoogle(cfg, { system, user, maxTokens }) {
+  const url = `${cfg.baseUrl}/models/${encodeURIComponent(cfg.model)}:generateContent?key=${encodeURIComponent(cfg.apiKey)}`;
+  const res = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents: [{ role: "user", parts: [{ text: user }] }], generationConfig: { responseMimeType: "application/json", maxOutputTokens: maxTokens } }) });
+  const { raw, json } = await readJson(res);
+  if (!res.ok) return { ok: false, error: apiErr("Gemini", res.status, json, raw) };
+  const cand = json?.candidates?.[0];
+  const block = json?.promptFeedback?.blockReason || cand?.finishReason;
+  if (block && block !== "STOP" && block !== "MAX_TOKENS" && !cand?.content) return { ok: false, error: `Gemini blocked this request (${block}). Review it manually.` };
+  const text = (cand?.content?.parts || []).map((p) => (typeof p.text === "string" ? p.text : "")).join("");
+  return { ok: true, text, usage: normUsage(json?.usageMetadata, "google"), model: cfg.model };
+}
+
+/* ============================ UI ============================ */
+const $ = (s) => document.querySelector(s);
+const state = { rating: null, config: null };
+function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+function toast(m) { const t = $("#toast"); t.textContent = m; t.classList.add("show"); clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove("show"), 2400); }
+const fmtN = (n) => (Number(n) || 0).toLocaleString();
+function fmtUSD(n) { const v = Number(n) || 0; if (v === 0) return "$0"; if (v < 0.01) return "$" + v.toFixed(5); if (v < 1) return "$" + v.toFixed(4); return "$" + v.toFixed(2); }
+function shortLabel(p) { return (p?.label || "").replace(/\s*\(.*\)$/, "") || (p?.id ?? ""); }
+function shortLabelById(id) { const p = (state.config?.providers || []).find((x) => x.id === id); return p ? shortLabel(p) : id || ""; }
+
+const el = {};
+["salonName","salonSub","quickSwitch","keysBtn","activeLabel","reviewText","stars","clearStar","optionCount","runWith","runProvider","runModel","runModels","usageBar","techSelect","techFree","platformSelect","contextNote","generateBtn","exampleSelect","resultsHead","typeSelect","techDetected","regenBtn","humanBanner","rosterNote","cards","flagsPanel","flagsList","placeholder","loading","errorBox","keysOverlay","keysClose","keysDone","provList","activeHint","keyLock",
+ "sfName","sfCity","sfPrice","sfSignoff","sfTechs","salonSave","salonReset"].forEach((id) => (el[id] = document.getElementById(id)));
+
+function config() {
+  const providers = redacted(), active = activeProvider(), ap = providers.find((p) => p.id === active);
+  const brand = loadBrand();
+  return { salon: brand.salon, technicians: brand.technicians.map((t) => t.name), platforms: ["Google","Yelp","Facebook","Other"], active, activeConfigured: ap ? ap.configured : false, anyConfigured: anyConfigured(), providers };
+}
+
+function init() {
+  const cfg = config(); state.config = cfg;
+  el.salonName.textContent = cfg.salon.name;
+  el.salonSub.textContent = "Review Response Studio" + (cfg.salon.city ? " · " + cfg.salon.city : "");
+  document.title = cfg.salon.name + " — Review Studio";
+  applyProviderState(cfg);
+  for (const p of cfg.providers) { const dl = document.getElementById(p.id + "Models"); if (dl && p.models) dl.innerHTML = p.models.map((m) => `<option value="${esc(m)}"></option>`).join(""); }
+  el.techSelect.innerHTML = '<option value="">— none / detect —</option>' + cfg.technicians.map((n) => `<option value="${esc(n)}">${esc(n)}</option>`).join("");
+  el.platformSelect.innerHTML = '<option value="">—</option>' + cfg.platforms.map((p) => `<option value="${esc(p)}">${esc(p)}</option>`).join("");
+  el.typeSelect.innerHTML = REVIEW_TYPES.map((t) => `<option value="${esc(t)}">${esc(t)}</option>`).join("");
+  el.exampleSelect.innerHTML = '<option value="">—</option>' + FIXTURES.map((f, i) => `<option value="${i}">${esc(f.label)}</option>`).join("");
+  if (!cfg.anyConfigured) openKeys();
+}
+
+function applyProviderState(cfg) {
+  state.config = cfg;
+  const ap = cfg.providers.find((p) => p.id === cfg.active);
+  if (cfg.anyConfigured && ap && ap.configured) { el.activeLabel.textContent = shortLabel(ap) + " · " + ap.model; el.keysBtn.classList.remove("warn"); }
+  else { el.activeLabel.textContent = "Set up API keys"; el.keysBtn.classList.add("warn"); }
+  const configured = cfg.providers.filter((p) => p.configured);
+  if (configured.length >= 2) { el.quickSwitch.innerHTML = configured.map((p) => `<option value="${p.id}"${p.id === cfg.active ? " selected" : ""}>${esc(shortLabel(p))} · ${esc(p.model)}</option>`).join(""); el.quickSwitch.classList.remove("hidden"); }
+  else el.quickSwitch.classList.add("hidden");
+  syncRunPicker(cfg);
+}
+function refresh() { applyProviderState(config()); }
+
+/* run picker */
+function syncRunPicker(cfg) {
+  const configured = cfg.providers.filter((p) => p.configured);
+  if (!configured.length) return el.runWith.classList.add("hidden");
+  el.runWith.classList.remove("hidden");
+  const prev = el.runProvider.value;
+  el.runProvider.innerHTML = configured.map((p) => `<option value="${p.id}">${esc(shortLabel(p))}</option>`).join("");
+  el.runProvider.value = configured.some((p) => p.id === prev) ? prev : cfg.active;
+  updateRunModel(el.runProvider.value !== prev);
+}
+function updateRunModel(setDefault) {
+  const p = (state.config?.providers || []).find((x) => x.id === el.runProvider.value); if (!p) return;
+  el.runModels.innerHTML = (p.models || []).map((m) => `<option value="${esc(m)}"></option>`).join("");
+  if (setDefault || !el.runModel.value.trim()) el.runModel.value = p.model || p.defaultModel || "";
+}
+
+/* stars */
+function paintStars() { el.stars.querySelectorAll("button[data-star]").forEach((b) => b.classList.toggle("on", state.rating != null && Number(b.dataset.star) <= state.rating)); }
+el.stars.addEventListener("click", (e) => { const b = e.target.closest("button[data-star]"); if (!b) return; state.rating = Number(b.dataset.star); paintStars(); });
+el.clearStar.addEventListener("click", () => { state.rating = null; paintStars(); });
+
+/* examples */
+el.exampleSelect.addEventListener("change", () => {
+  const i = el.exampleSelect.value; if (i === "") return; const f = FIXTURES[Number(i)]; if (!f) return;
+  el.reviewText.value = f.review || ""; state.rating = f.rating ?? null; paintStars();
+  el.techFree.value = f.technician || ""; el.techSelect.value = (state.config?.technicians || []).includes(f.technician) ? f.technician : "";
+  el.platformSelect.value = f.platform || ""; el.contextNote.value = f.context || "";
+});
+el.techSelect.addEventListener("change", () => { if (el.techSelect.value) el.techFree.value = ""; });
+
+function collectInput() {
+  return { review: el.reviewText.value, rating: state.rating, technician: el.techFree.value.trim() || el.techSelect.value || "", platform: el.platformSelect.value, context: el.contextNote.value.trim(), count: Number(el.optionCount.value) || 3, provider: el.runProvider.value || undefined, model: el.runModel.value.trim() || undefined };
+}
+
+/* generate */
+async function generate() {
+  const input = collectInput();
+  if (!input.review.trim() && input.rating == null) return toast("Add a review and/or a star rating first.");
+  if (!anyConfigured()) { showError("No provider is set up yet. Open Settings and add an API key."); return openKeys(); }
+  el.placeholder.classList.add("hidden"); el.errorBox.classList.add("hidden"); el.resultsHead.classList.add("hidden");
+  el.cards.innerHTML = ""; el.flagsPanel.classList.add("hidden"); el.humanBanner.classList.add("hidden"); el.rosterNote.classList.add("hidden"); el.usageBar.classList.add("hidden");
+  el.loading.classList.remove("hidden"); el.generateBtn.disabled = true; el.regenBtn.disabled = true;
+  try {
+    const provider = input.provider && isConfigured(input.provider) ? input.provider : activeProvider();
+    const brand = loadBrand();
+    const res = await callProvider(provider, { system: buildSystemPrompt(brand), user: buildUserMessage(input), maxTokens: 3000, model: input.model });
+    if (!res.ok) return showError(res.error);
+    const parsed = parseModelJson(res.text);
+    if (!parsed.ok) return showError(parsed.error + " You can try regenerating.");
+    const result = normalizeResult(parsed.data);
+    render(result, input);
+    renderUsage({ provider, model: res.model, usage: res.usage, cost: estimateCost(res.model, res.usage) });
+  } catch (e) { showError("Something went wrong: " + e.message); }
+  finally { el.loading.classList.add("hidden"); el.generateBtn.disabled = false; el.regenBtn.disabled = false; }
+}
+function showError(msg) { el.errorBox.innerHTML = `${esc(msg)}<br><button class="ghost" id="retryBtn">↻ Try again</button>`; el.errorBox.classList.remove("hidden"); $("#retryBtn")?.addEventListener("click", generate); }
+
+function render(result, input) {
+  el.resultsHead.classList.remove("hidden");
+  el.typeSelect.value = REVIEW_TYPES.includes(result.detected_type) ? result.detected_type : "";
+  if (result.detected_type && !REVIEW_TYPES.includes(result.detected_type)) { const o = document.createElement("option"); o.value = o.textContent = result.detected_type; el.typeSelect.appendChild(o); el.typeSelect.value = result.detected_type; }
+  el.techDetected.innerHTML = result.technician ? `Technician: <b>${esc(result.technician)}</b>` : `<span class="muted">No technician named</span>`;
+  if (result.needs_human_review) { el.humanBanner.innerHTML = `<span>⚠</span><span><b>Needs owner / legal sign-off</b>${result.sensitivity_reason ? " — " + esc(result.sensitivity_reason) : ""}<br>These are drafts only. Read carefully and edit before anything is posted.</span>`; el.humanBanner.classList.remove("hidden"); }
+  if (result.roster_note) { el.rosterNote.textContent = "👤 " + result.roster_note; el.rosterNote.classList.remove("hidden"); }
+  el.cards.innerHTML = "";
+  result.options.forEach((op, idx) => {
+    const card = document.createElement("div");
+    card.className = "card" + (result.needs_human_review ? " flagged" : "");
+    card.innerHTML = `<div class="chead"><span class="angle">${esc(op.angle)}</span>${result.needs_human_review ? '<span class="badge">draft — needs review</span>' : ""}</div>
+      <div class="cbody"><textarea class="response" rows="3" aria-label="Response option ${idx + 1}"></textarea><div class="why"><span class="k">Why this angle:</span><span>${esc(op.rationale)}</span></div></div>
+      <div class="cfoot"><span class="count"></span><button class="btn copy">Copy</button><button class="btn save">Save as exemplar</button></div>`;
+    const ta = card.querySelector(".response"), count = card.querySelector(".count");
+    ta.value = op.response;
+    const upd = () => (count.textContent = ta.value.length + " chars"); upd(); ta.addEventListener("input", upd);
+    const autosize = () => { ta.style.height = "auto"; ta.style.height = ta.scrollHeight + "px"; }; setTimeout(autosize, 0); ta.addEventListener("input", autosize);
+    card.querySelector(".copy").addEventListener("click", (e) => navigator.clipboard.writeText(ta.value).then(() => { const b = e.target; b.textContent = "Copied ✓"; b.classList.add("done"); setTimeout(() => { b.textContent = "Copy"; b.classList.remove("done"); }, 1400); }, () => toast("Copy failed — select and copy manually.")));
+    card.querySelector(".save").addEventListener("click", () => saveExemplar(input, ta.value, el.typeSelect.value));
+    el.cards.appendChild(card);
+  });
+  if (result.operational_flags?.length) { el.flagsList.innerHTML = result.operational_flags.map((f) => `<div class="flag"><span class="sev ${esc(f.severity)}">${esc(f.severity)}</span><div><span class="fissue">${esc(f.issue)}</span> — <span class="fnote">${esc(f.note)}</span></div></div>`).join(""); el.flagsPanel.classList.remove("hidden"); }
+  else el.flagsPanel.classList.add("hidden");
+}
+function renderUsage(meta) {
+  if (!meta) return el.usageBar.classList.add("hidden");
+  let s = `Generated with <b>${esc(shortLabelById(meta.provider))}</b> · ${esc(meta.model || "")}`;
+  if (meta.usage && (meta.usage.input || meta.usage.output)) s += ` <span class="sep">·</span> ${fmtN(meta.usage.input)} in / ${fmtN(meta.usage.output)} out tokens`;
+  if (meta.cost && typeof meta.cost.total === "number") s += ` <span class="sep">·</span> <span class="cost">~${fmtUSD(meta.cost.total)}</span> <span class="muted">est.</span>`;
+  el.usageBar.innerHTML = s; el.usageBar.classList.remove("hidden");
+}
+
+/* learning loop — save to localStorage */
+function saveExemplar(input, response, type) {
+  if (!response.trim()) return toast("Nothing to save.");
+  const stars = Number(input.rating) ? Number(input.rating) + "★" : "—";
+  const safe = (x) => String(x ?? "").replace(/"/g, '\\"');
+  const block = `## Approved ${new Date().toISOString().slice(0, 10)}${type ? " — " + type : ""}\n> Review (${stars}): "${safe(input.review)}"\n> Response: "${safe(response)}"`;
+  const s = store(); s.savedExemplars = s.savedExemplars || []; s.savedExemplars.push(block); saveStore(s);
+  toast("Saved to the voice library ✓");
+}
+
+/* ---- settings: API keys ---- */
+function renderProviderList() {
+  const cfg = config(); const providers = cfg.providers, active = cfg.active;
+  el.provList.innerHTML = providers.map((p) => {
+    const status = p.configured ? `configured · ••••${esc(p.last4 || "")}` : p.hasKey ? "key set — add a model" : "not set";
+    const cors = p.browserOk ? "" : ` <span style="color:var(--warn)">· may be blocked in-browser (CORS)</span>`;
+    return `<div class="prow ${p.id === active ? "active" : ""}" data-prow="${p.id}">
+      <div class="ptop"><label class="pradio"><input type="radio" name="activeProvider" value="${p.id}" ${p.id === active ? "checked" : ""} ${p.configured ? "" : "disabled"} /> ${esc(shortLabel(p))}</label>
+        <span class="pstatus ${p.configured ? "ok" : ""}">${status}${cors}</span><a class="pdocs" href="${esc(p.docs)}" target="_blank" rel="noopener">get a key ↗</a></div>
+      <div class="pfields">
+        ${p.needsBaseUrl ? `<div class="frow"><label>Base URL</label><input type="text" data-field="baseUrl" placeholder="${esc(p.baseUrlHint || "https://…/v1")}" value="${esc(p.baseUrl || "")}" /></div>` : ""}
+        <div class="frow"><label>Model</label><input type="text" data-field="model" list="${p.id}Models" placeholder="${esc(p.defaultModel || "model id")}" value="${esc(p.model || "")}" /></div>
+        <div class="frow"><label>API key</label><input type="password" data-field="apiKey" autocomplete="off" placeholder="${p.hasKey ? "•••• saved — leave blank to keep" : esc(p.keyHint || "paste key")}" /><button class="btn save" data-save="${p.id}">Save</button>${p.hasKey ? `<button class="btn remove" data-remove="${p.id}">Remove</button>` : ""}</div>
+      </div></div>`;
+  }).join("");
+  const ap = providers.find((p) => p.id === active);
+  el.activeHint.textContent = ap && ap.configured ? "Active: " + shortLabel(ap) : "Add a key, then pick a provider.";
+  el.provList.querySelectorAll("[data-save]").forEach((b) => b.addEventListener("click", () => saveKey(b.dataset.save)));
+  el.provList.querySelectorAll("[data-remove]").forEach((b) => b.addEventListener("click", () => removeKey(b.dataset.remove)));
+  el.provList.querySelectorAll('input[name="activeProvider"]').forEach((r) => r.addEventListener("change", () => { if (r.checked) setActiveProvider(r.value); }));
+}
+function saveKey(provider) {
+  const row = el.provList.querySelector(`[data-prow="${provider}"]`); if (!row) return;
+  const get = (f) => row.querySelector(`[data-field="${f}"]`);
+  const s = store(); s.providers[provider] = s.providers[provider] || {};
+  const key = get("apiKey")?.value.trim(); if (key) s.providers[provider].apiKey = key;
+  s.providers[provider].model = get("model")?.value.trim() || "";
+  if (get("baseUrl")) s.providers[provider].baseUrl = get("baseUrl").value.trim();
+  if (!s.active) s.active = provider;
+  saveStore(s);
+  if (get("apiKey")) get("apiKey").value = "";
+  refresh(); renderProviderList(); toast("Saved ✓");
+}
+function removeKey(provider) { const s = store(); delete s.providers[provider]; if (s.active === provider) s.active = Object.keys(s.providers)[0] || null; saveStore(s); refresh(); renderProviderList(); toast("Key removed."); }
+function setActiveProvider(provider) {
+  if (!isConfigured(provider)) { toast("That provider has no key/model yet."); refresh(); renderProviderList(); return; }
+  const s = store(); s.active = provider; saveStore(s); refresh(); if (el.keysOverlay.classList.contains("show")) renderProviderList();
+  toast("Now using " + shortLabelById(provider));
+}
+
+/* ---- settings: salon ---- */
+function fillSalonForm() {
+  const s = store(); const salon = Object.assign({}, BRAND_DEFAULT.salon, s.salon || {});
+  el.sfName.value = salon.name || ""; el.sfCity.value = salon.city || ""; el.sfPrice.value = salon.price_point_usd ?? "";
+  el.sfSignoff.value = salon.signoff || "";
+  const techs = (Array.isArray(s.technicians) && s.technicians.length ? s.technicians : BRAND_DEFAULT.technicians.map((t) => t.name));
+  el.sfTechs.value = techs.join("\n");
+}
+el.salonSave.addEventListener("click", () => {
+  const s = store();
+  s.salon = Object.assign({}, s.salon || {}, { name: el.sfName.value.trim() || BRAND_DEFAULT.salon.name, city: el.sfCity.value.trim(), price_point_usd: Number(el.sfPrice.value) || BRAND_DEFAULT.salon.price_point_usd, signoff: el.sfSignoff.value.trim() });
+  const techs = el.sfTechs.value.split("\n").map((x) => x.trim()).filter(Boolean);
+  s.technicians = techs.length ? techs : undefined;
+  saveStore(s); init(); toast("Salon settings saved ✓");
+});
+el.salonReset.addEventListener("click", () => { const s = store(); delete s.salon; delete s.technicians; saveStore(s); fillSalonForm(); init(); toast("Reset to defaults."); });
+
+/* ---- modal + tabs ---- */
+function openKeys() { renderProviderList(); fillSalonForm(); el.keysOverlay.classList.add("show"); el.keysOverlay.setAttribute("aria-hidden", "false"); }
+function closeKeys() { el.keysOverlay.classList.remove("show"); el.keysOverlay.setAttribute("aria-hidden", "true"); }
+el.keysBtn.addEventListener("click", openKeys);
+el.keysClose.addEventListener("click", closeKeys);
+el.keysDone.addEventListener("click", closeKeys);
+el.keysOverlay.addEventListener("click", (e) => { if (e.target === el.keysOverlay) closeKeys(); });
+el.quickSwitch.addEventListener("change", () => setActiveProvider(el.quickSwitch.value));
+el.runProvider.addEventListener("change", () => updateRunModel(true));
+document.querySelectorAll(".tabs button").forEach((b) => b.addEventListener("click", () => {
+  document.querySelectorAll(".tabs button").forEach((x) => x.classList.toggle("active", x === b));
+  $("#tabKeys").classList.toggle("hidden", b.dataset.tab !== "keys");
+  $("#tabSalon").classList.toggle("hidden", b.dataset.tab !== "salon");
+}));
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && el.keysOverlay.classList.contains("show")) closeKeys(); });
+el.generateBtn.addEventListener("click", generate);
+el.regenBtn.addEventListener("click", generate);
+el.reviewText.addEventListener("keydown", (e) => { if ((e.metaKey || e.ctrlKey) && e.key === "Enter") generate(); });
+
+init();
+</script>
+</body>
+</html>
