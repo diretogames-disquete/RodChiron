@@ -1,0 +1,12 @@
+{
+  "name": "Frenchies Modern Nail Care",
+  "city": "Winston-Salem, NC",
+  "price_point_usd": 80,
+  "sterilization": ["autoclave", "single-use files"],
+  "uses_uv_lamps": true,
+  "doctor_recommended": true,
+  "no_acrylics": true,
+  "no_jetted_tubs": true,
+  "low_odor": true,
+  "signoff": "— The Frenchies Team"
+}

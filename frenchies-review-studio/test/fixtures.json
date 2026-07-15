@@ -1,0 +1,65 @@
+[
+  {
+    "label": "1 · Short positive, names Amber",
+    "review": "Love my mani! Amber is fab!",
+    "rating": 5,
+    "technician": "Amber",
+    "platform": "Google",
+    "context": "",
+    "expect": "Short Positive; names Amber; brief; rotate openers."
+  },
+  {
+    "label": "2 · Detailed positive, Rheanna, product-curious",
+    "review": "Very impressed with pedicure — my best ever! Rheanna was thorough, used products I haven't had used on my feet. Polish looks great and my feet feel amazing!",
+    "rating": 5,
+    "technician": "Rheanna",
+    "platform": "Google",
+    "context": "",
+    "expect": "Detailed Positive; one option weaves the natural-nail/products differentiator lightly; one is a testimonial-invitation angle."
+  },
+  {
+    "label": "3 · Short positive, no tech, anchor on 'clean'",
+    "review": "Clean, friendly staff, great products!",
+    "rating": 5,
+    "technician": "",
+    "platform": "Yelp",
+    "context": "",
+    "expect": "Short Positive; no tech; anchor on 'clean'."
+  },
+  {
+    "label": "4 · First-visit convert, 72-year-old",
+    "review": "I'm a 72-year-old guy and it's getting harder to trim my toenails. Frenchies was recommended for my father-in-law but I thought I would go ahead 'for him.' It was worth it. I'll be back.",
+    "rating": 5,
+    "technician": "",
+    "platform": "Google",
+    "context": "First visit",
+    "expect": "Warm first-visit-convert; respect dignity; don't lean on age or over-explain that men are welcome."
+  },
+  {
+    "label": "5 · Pricing complaint ($80 mani)",
+    "review": "$80 for a mani is steep. It looked nice but I don't think I'll be back at that price.",
+    "rating": 3,
+    "technician": "",
+    "platform": "Yelp",
+    "context": "",
+    "expect": "Negative – Pricing; acknowledge value perception; reference care/sterilization carefully; NEVER defend the number."
+  },
+  {
+    "label": "6 · Hostile / BBB mention",
+    "review": "WORST experience of my life. The staff were rude and dismissive and I felt disrespected the entire time. I am filing a complaint with the BBB and telling everyone I know to stay away from this place.",
+    "rating": 1,
+    "technician": "",
+    "platform": "Google",
+    "context": "",
+    "expect": "Triggers Needs-human-review banner (hostile + BBB); calm, factual drafts only."
+  },
+  {
+    "label": "7 · Misdirected (waxing / male front-desk)",
+    "review": "Booked a Brazilian wax and the guy at the front desk was super unprofessional. The waxing room wasn't ready and I waited 40 minutes. Never coming back for a wax here.",
+    "rating": 2,
+    "technician": "",
+    "platform": "Facebook",
+    "context": "",
+    "expect": "Flag as possibly meant for another business — Frenchies does natural nails, not waxing, and has no male front-desk person in these facts."
+  }
+]

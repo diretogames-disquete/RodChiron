@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Frenchies Review Studio</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23c06a4a'/%3E%3C/svg%3E" />
+<link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+<header class="topbar">
+  <div class="brandmark">
+    <span class="dot"></span>
+    <div>
+      <h1 id="salonName">Frenchies Review Studio</h1>
+      <p class="sub" id="salonSub">Review Response Studio</p>
+    </div>
+  </div>
+  <div class="modelchip" id="modelChip"></div>
+</header>
+
+<main class="layout">
+  <!-- Input panel -->
+  <section class="panel input" aria-label="Review input">
+    <div class="row between">
+      <h2>The review</h2>
+      <label class="ex">
+        Load example
+        <select id="exampleSelect"><option value="">—</option></select>
+      </label>
+    </div>
+
+    <textarea id="reviewText" rows="7" placeholder="Paste the client review here…"></textarea>
+
+    <div class="grid2">
+      <div class="field">
+        <label>Star rating</label>
+        <div class="stars" id="stars" role="radiogroup" aria-label="Star rating">
+          <button type="button" data-star="1" aria-label="1 star">★</button>
+          <button type="button" data-star="2" aria-label="2 stars">★</button>
+          <button type="button" data-star="3" aria-label="3 stars">★</button>
+          <button type="button" data-star="4" aria-label="4 stars">★</button>
+          <button type="button" data-star="5" aria-label="5 stars">★</button>
+          <button type="button" class="clearstar" id="clearStar" title="Clear">✕</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="optionCount">Options</label>
+        <select id="optionCount">
+          <option value="2">2</option>
+          <option value="3" selected>3</option>
+          <option value="4">4</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="field">
+        <label for="techSelect">Technician (optional)</label>
+        <select id="techSelect"><option value="">— none / detect —</option></select>
+        <input id="techFree" type="text" placeholder="…or type a name" />
+      </div>
+      <div class="field">
+        <label for="platformSelect">Platform (optional)</label>
+        <select id="platformSelect"><option value="">—</option></select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="contextNote">Context notes (optional)</label>
+      <input id="contextNote" type="text" placeholder="e.g. regular client · resolved offline · first visit" />
+    </div>
+
+    <button id="generateBtn" class="primary">Generate responses</button>
+    <p class="hint">Nothing is posted automatically. You always pick and can edit before using anything.</p>
+  </section>
+
+  <!-- Results panel -->
+  <section class="panel results" aria-label="Generated responses">
+    <div id="resultsHead" class="resultsHead hidden">
+      <div class="meta">
+        <label class="metaLabel">Detected type
+          <select id="typeSelect"></select>
+        </label>
+        <span class="techDetected" id="techDetected"></span>
+      </div>
+      <button id="regenBtn" class="ghost" title="Re-roll fresh angles">↻ Regenerate</button>
+    </div>
+
+    <div id="humanBanner" class="banner hidden"></div>
+    <div id="rosterNote" class="rosterNote hidden"></div>
+
+    <div id="cards" class="cards"></div>
+
+    <div id="flagsPanel" class="flags hidden">
+      <h3>Operational flags <span class="muted">(for you — not part of the reply)</span></h3>
+      <div id="flagsList"></div>
+    </div>
+
+    <div id="placeholder" class="placeholder">
+      <div class="ph-badge">✦</div>
+      <p>Paste a review and a star rating, then <b>Generate</b>.<br />
+      You'll get a few genuinely different response options — each with a one-line "why this angle."</p>
+    </div>
+
+    <div id="loading" class="loading hidden"><span class="spin"></span> Writing in the house voice…</div>
+    <div id="errorBox" class="errorBox hidden"></div>
+  </section>
+</main>
+
+<div class="toast" id="toast"></div>
+<script src="/app.js"></script>
+</body>
+</html>
