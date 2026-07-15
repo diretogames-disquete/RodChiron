@@ -32,21 +32,42 @@ comes from **editable config files**, not a model default.
 Requires **Node 20.12+** (Node 22 recommended). No dependencies to install.
 
 ```bash
-# 1. Add your API key
-cp .env.example .env        # then edit .env and paste your ANTHROPIC_API_KEY
-
-# 2. Run it
 npm start                   # or: node server.js
-
-# 3. Open http://localhost:3000
+# then open http://localhost:3000
 ```
 
-Get an API key at <https://console.anthropic.com/> (Settings → API Keys). The key
-is read from `.env` **server-side** and never sent to the browser. `.env` is
-git-ignored.
+Then add at least one provider key — either in the app (click **API keys** in the
+top-right) or via `.env` (`cp .env.example .env`). Keys are read **server-side**
+and never sent to the browser.
 
-**Model:** defaults to the current Sonnet-class model, `claude-sonnet-5`. Change it
-with `ANTHROPIC_MODEL` in `.env`.
+## Providers & API keys (bring your own, switch anytime)
+
+Run the studio on whichever provider you want, so you control token costs:
+
+| Provider | Notes |
+|---|---|
+| **Anthropic (Claude)** | `claude-sonnet-5` (default), `claude-opus-4-8`, `claude-haiku-4-5`. |
+| **OpenAI (GPT)** | e.g. `gpt-4o-mini` (cheap), `gpt-4o`, `gpt-4.1`. |
+| **Google (Gemini)** | e.g. `gemini-1.5-flash` (cheap), `gemini-1.5-pro`. |
+| **OpenAI-compatible** | Any endpoint that speaks the OpenAI Chat Completions API — **OpenRouter, Groq, DeepSeek, Together, or a local model**. Enter a base URL, key, and model. This is the widest cost lever. |
+
+**Click "API keys" in the header** to add a key per provider, set the model, and
+choose which provider is **active**. A quick-switch dropdown appears in the header
+once two or more are configured, so you can flip providers without opening the
+panel. Model fields are free text with suggestions — if a provider ships a new
+model, just type its id.
+
+**How keys are handled (safely):**
+
+- Keys you enter POST to the local server and are stored in a **git-ignored
+  `.secrets.json` on this machine** (written `chmod 600`). They are the only thing
+  besides saved exemplars that touches disk.
+- The browser **never receives a full key** — the UI shows only the last 4 digits.
+  The key field clears itself after saving.
+- `.env` keys (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GOOGLE_API_KEY`) still work
+  as a fallback; a UI-entered key for the same provider takes precedence.
+- Each generation is sent only to the provider you have active (or one you name in
+  the request).
 
 ---
 
@@ -98,12 +119,14 @@ generation — edit a file, generate again, done:
 - **Stack:** a small local Node HTTP server (`server.js`) + a static front end in
   `/public`. **Zero runtime dependencies** — uses Node's built-in `fetch` and
   `process.loadEnvFile()`. One command to run.
-- **Model call:** made **server-side** from the `/api/generate` route
-  (`lib/anthropic.js`). The Anthropic Messages API is called with
-  `output_config.format` (structured outputs) so the model returns valid JSON;
-  a fence-stripping `JSON.parse`-in-`try/catch` parser is the fallback, and the UI
-  shows a friendly error + **Regenerate** on any failure. Never crashes on a bad
-  response.
+- **Model call:** made **server-side** from the `/api/generate` route. A small
+  provider layer (`lib/providers.js`) handles each provider's wire format —
+  Anthropic Messages API (with `output_config.format` structured outputs), OpenAI
+  / OpenAI-compatible Chat Completions, and Google Gemini `generateContent`. A
+  fence-stripping `JSON.parse`-in-`try/catch` parser normalizes every provider's
+  output, and the UI shows a friendly error + **Regenerate** on any failure. Never
+  crashes on a bad response. Keys are resolved by `lib/secrets.js` (local file)
+  with `.env` fallback.
 - **System prompt** is assembled at request time by `buildSystemPrompt()`
   (`lib/buildSystemPrompt.js`) from the brand files, salon facts, technician roster,
   review taxonomy, multi-angle logic, and the sensitive-case rules — the voice is
@@ -115,10 +138,13 @@ generation — edit a file, generate again, done:
 
 | Route | Purpose |
 |---|---|
-| `GET /api/config` | Salon name, technician list, platforms, model (no secrets). |
+| `GET /api/config` | Salon info, technicians, platforms, and per-provider status (redacted — last 4 only). |
 | `GET /api/fixtures` | The seeded test reviews for "Load example." |
-| `POST /api/generate` | `{review, rating, technician, platform, context, count}` → structured options. |
+| `POST /api/generate` | `{review, rating, technician, platform, context, count, provider?}` → structured options from the active (or named) provider. |
 | `POST /api/save-exemplar` | Appends an approved review+response to `voice-exemplars.md`. |
+| `POST /api/providers/key` | `{provider, apiKey?, model?, baseUrl?}` → save a provider's config locally. |
+| `DELETE /api/providers/key` | `{provider}` → remove a saved key. |
+| `POST /api/providers/active` | `{provider}` → set the active provider. |
 
 ### Output contract
 
@@ -153,8 +179,10 @@ including the pricing complaint, the hostile/BBB case, and the misdirected revie
 
 ## Privacy & safety
 
-- The API key stays server-side (read from `.env`, never exposed to the browser).
-- Reviews you paste are sent to the Anthropic API to generate responses.
+- API keys stay server-side — read from `.env` or the git-ignored `.secrets.json`
+  (chmod 600), never exposed to the browser (the UI shows only the last 4 digits).
+- Reviews you paste are sent to the **active provider** you chose, to generate
+  responses.
 - Nothing is auto-posted; you always pick and can edit first.
 - Sensitive cases (hostility, legal/BBB, health-harm, unsanitary claims,
   misdirected reviews) are flagged for human sign-off and never presented as

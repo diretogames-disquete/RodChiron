@@ -10,7 +10,15 @@ import { dirname, join, normalize, extname } from "node:path";
 
 import { loadBrand, appendExemplar } from "./lib/brand.js";
 import { buildSystemPrompt, buildUserMessage } from "./lib/buildSystemPrompt.js";
-import { callClaude, parseModelJson, DEFAULT_MODEL } from "./lib/anthropic.js";
+import {
+  callProvider,
+  parseModelJson,
+  redactedStatus,
+  activeProvider,
+  isConfigured,
+  getProvider,
+} from "./lib/providers.js";
+import { setKey, removeKey, setActive } from "./lib/secrets.js";
 import { normalizeResult } from "./lib/schema.js";
 
 // Load .env if present (Node 20.12+/22 built-in; no dependency).
@@ -37,6 +45,14 @@ function sendJson(res, status, obj) {
   const body = JSON.stringify(obj);
   res.writeHead(status, { "content-type": "application/json; charset=utf-8" });
   res.end(body);
+}
+
+async function parseBody(req) {
+  try {
+    return JSON.parse((await readBody(req)) || "{}");
+  } catch {
+    return {};
+  }
 }
 
 async function readBody(req, limit = 200_000) {
@@ -78,6 +94,9 @@ async function serveStatic(req, res, urlPath) {
 
 function handleConfig(res) {
   const brand = loadBrand();
+  const providers = redactedStatus();
+  const active = activeProvider();
+  const activeP = providers.find((p) => p.id === active) || null;
   sendJson(res, 200, {
     salon: {
       name: brand.salon.name,
@@ -87,9 +106,38 @@ function handleConfig(res) {
     technicians: (brand.technicians || []).map((t) => t.name).filter(Boolean),
     platforms: ["Google", "Yelp", "Facebook", "Other"],
     defaultCount: 3,
-    model: process.env.ANTHROPIC_MODEL || DEFAULT_MODEL,
-    apiKeyPresent: Boolean(process.env.ANTHROPIC_API_KEY),
+    active,
+    activeConfigured: activeP ? activeP.configured : false,
+    activeModel: activeP ? activeP.model : "",
+    anyConfigured: providers.some((p) => p.configured),
+    providers,
   });
+}
+
+function handleSetKey(req, res, body) {
+  const { provider, apiKey, model, baseUrl, label } = body || {};
+  if (!provider || !getProvider(provider))
+    return sendJson(res, 400, { error: "Unknown provider." });
+  setKey(provider, { apiKey, model, baseUrl, label });
+  sendJson(res, 200, { ok: true, providers: redactedStatus(), active: activeProvider() });
+}
+
+function handleRemoveKey(req, res, body) {
+  const { provider } = body || {};
+  if (!provider || !getProvider(provider))
+    return sendJson(res, 400, { error: "Unknown provider." });
+  removeKey(provider);
+  sendJson(res, 200, { ok: true, providers: redactedStatus(), active: activeProvider() });
+}
+
+function handleSetActive(req, res, body) {
+  const { provider } = body || {};
+  if (!provider || !getProvider(provider))
+    return sendJson(res, 400, { error: "Unknown provider." });
+  if (!isConfigured(provider))
+    return sendJson(res, 400, { error: "That provider has no API key / model yet." });
+  setActive(provider);
+  sendJson(res, 200, { ok: true, providers: redactedStatus(), active: activeProvider() });
 }
 
 async function handleFixtures(res) {
@@ -112,6 +160,16 @@ async function handleGenerate(req, res) {
     return sendJson(res, 400, { error: "Provide a review and/or a star rating." });
   }
 
+  // Use the provider named in the request if it's configured, else the active one.
+  const requested = input.provider && isConfigured(input.provider) ? input.provider : null;
+  const provider = requested || activeProvider();
+  if (!isConfigured(provider)) {
+    return sendJson(res, 400, {
+      error: "No provider is set up yet. Open “API keys” and add a key for a provider.",
+      needsSetup: true,
+    });
+  }
+
   const brand = loadBrand();
   const system = buildSystemPrompt(brand);
   const user = buildUserMessage({
@@ -119,9 +177,9 @@ async function handleGenerate(req, res) {
     today: new Date().toISOString().slice(0, 10),
   });
 
-  const result = await callClaude({ system, user, maxTokens: 3000 });
+  const result = await callProvider(provider, { system, user, maxTokens: 3000 });
   if (!result.ok) {
-    return sendJson(res, 502, { error: result.error, retryable: true });
+    return sendJson(res, 502, { error: result.error, retryable: true, provider });
   }
 
   const parsed = parseModelJson(result.text);
@@ -135,7 +193,7 @@ async function handleGenerate(req, res) {
 
   sendJson(res, 200, {
     result: normalizeResult(parsed.data),
-    meta: { model: result.model, usage: result.usage || null },
+    meta: { provider, model: result.model, usage: result.usage || null },
   });
 }
 
@@ -172,6 +230,12 @@ const server = createServer(async (req, res) => {
     if (req.method === "POST" && url.startsWith("/api/generate")) return handleGenerate(req, res);
     if (req.method === "POST" && url.startsWith("/api/save-exemplar"))
       return handleSaveExemplar(req, res);
+    if (req.method === "POST" && url.startsWith("/api/providers/key"))
+      return handleSetKey(req, res, await parseBody(req));
+    if (req.method === "DELETE" && url.startsWith("/api/providers/key"))
+      return handleRemoveKey(req, res, await parseBody(req));
+    if (req.method === "POST" && url.startsWith("/api/providers/active"))
+      return handleSetActive(req, res, await parseBody(req));
     if (req.method === "GET") return serveStatic(req, res, url);
     res.writeHead(405, { "content-type": "text/plain" });
     res.end("Method not allowed");
@@ -186,8 +250,8 @@ server.listen(PORT, () => {
   console.log(`\n  Frenchies Review Studio`);
   console.log(`  ${brand.salon.name} — ${brand.salon.city}`);
   console.log(`  ▸ http://localhost:${PORT}`);
-  console.log(`  model: ${process.env.ANTHROPIC_MODEL || DEFAULT_MODEL}`);
-  if (!process.env.ANTHROPIC_API_KEY)
-    console.log(`  ⚠ ANTHROPIC_API_KEY not set — copy .env.example to .env and add your key.\n`);
-  else console.log("");
+  const active = activeProvider();
+  const p = redactedStatus().find((x) => x.id === active);
+  if (p && p.configured) console.log(`  provider: ${p.label} · ${p.model}\n`);
+  else console.log(`  ⚠ No provider set up yet — open the app and click “API keys”.\n`);
 });

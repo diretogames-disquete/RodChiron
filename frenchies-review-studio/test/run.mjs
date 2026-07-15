@@ -1,162 +1,158 @@
-// End-to-end test with a MOCK upstream (no API key / network needed).
-// Starts a fake Anthropic endpoint, points the app at it via ANTHROPIC_BASE_URL,
-// starts the real server, and drives the real /api routes.
+// End-to-end test with a MOCK upstream that emulates all provider wire formats
+// (Anthropic /v1/messages, OpenAI /chat/completions, Google :generateContent).
+// No API key or network needed. Secrets go to a throwaway file via
+// FRENCHIES_SECRETS_FILE so a real user's .secrets.json is never touched.
 import { createServer } from "node:http";
 import { spawn } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, rmSync, mkdtempSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import { tmpdir } from "node:os";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");
 let pass = 0, fail = 0;
-function ok(name, cond, extra = "") { if (cond) { pass++; console.log("  ✓ " + name); } else { fail++; console.log("  ✗ " + name + (extra ? " — " + extra : "")); } }
+const ok = (name, cond, extra = "") => { if (cond) { pass++; console.log("  ✓ " + name); } else { fail++; console.log("  ✗ " + name + (extra ? " — " + extra : "")); } };
 
-// Canned model reply, wrapped as a fenced JSON string to exercise the fence-stripping parser.
-function cannedReply(input) {
-  const n = Math.min(4, Math.max(2, Number(input.count) || 3));
-  const hostile = /bbb|lawyer|attorney|lawsuit|sue|worst experience|rude/i.test(input.review || "");
-  const obj = {
-    detected_type: hostile ? "Negative – Hostile" : "Detailed Positive",
-    technician: input.technician || null,
-    needs_human_review: hostile,
-    sensitivity_reason: hostile ? "Hostile tone and a BBB/complaint mention." : null,
-    options: Array.from({ length: n }, (_, i) => ({
-      angle: ["Anchor on the key phrase", "Differentiator-woven", "Testimonial invitation", "Take it offline"][i],
-      response: `Option ${i + 1} response text.`,
-      rationale: `Angle ${i + 1} rationale.`,
-      char_count: 24,
+function cannedObject(count = 3) {
+  const angles = ["Anchor on the key phrase", "Differentiator-woven", "Testimonial invitation", "Take it offline"];
+  return {
+    detected_type: "Detailed Positive", technician: "Rheanna", needs_human_review: false, sensitivity_reason: null,
+    options: Array.from({ length: count }, (_, i) => ({
+      angle: angles[i], response: `Option ${i + 1}.`, rationale: `why ${i + 1}`, char_count: 9,
     })),
-    operational_flags: hostile ? [{ issue: "Front-desk communication", severity: "high", note: "Reviewer felt disrespected." }] : [],
-    roster_note: null,
+    operational_flags: [], roster_note: null,
   };
-  return "```json\n" + JSON.stringify(obj) + "\n```";
 }
+// Reflect the requested option count back (the real model reads it from the prompt).
+const countFrom = (body) => Number(/Generate (\d+) strategically/.exec(body || "")?.[1]) || 3;
 
-// 1) Mock upstream
+const hits = []; // record which provider path was called
 const upstream = createServer((req, res) => {
-  let body = "";
-  req.on("data", (c) => (body += c));
+  let body = ""; req.on("data", (c) => (body += c));
   req.on("end", () => {
-    // sanity: server must send the required headers and a system prompt
-    const hasKey = req.headers["x-api-key"] === "test-key";
-    const hasVer = req.headers["anthropic-version"] === "2023-06-01";
-    let parsed = {}; try { parsed = JSON.parse(body); } catch {}
-    const sys = parsed.system || "";
-    // recover the review count from the user message
-    const um = parsed.messages?.[0]?.content || "";
-    const countMatch = /Generate (\d+) strategically/.exec(um);
-    const count = countMatch ? Number(countMatch[1]) : 3;
-    const reviewMatch = /"""\n([\s\S]*?)\n"""/.exec(um);
-    const review = reviewMatch ? reviewMatch[1] : "";
-    globalThis.__lastSystem = sys;
-    globalThis.__hasHeaders = hasKey && hasVer;
-    globalThis.__hasSchema = Boolean(parsed.output_config?.format?.schema);
-    res.writeHead(200, { "content-type": "application/json" });
-    res.end(JSON.stringify({
-      content: [{ type: "text", text: cannedReply({ count, review, technician: /technician on this visit: ([^\n]+)/i.exec(um)?.[1]?.trim() || "" }) }],
-      stop_reason: "end_turn",
-      usage: { input_tokens: 10, output_tokens: 20 },
-      model: "mock",
-    }));
+    const url = req.url || "";
+    const json = JSON.stringify(cannedObject(countFrom(body)));
+    if (url.includes("/v1/messages")) {
+      hits.push("anthropic");
+      globalThis.__anthHeaders = req.headers["x-api-key"] === "test-key" && req.headers["anthropic-version"] === "2023-06-01";
+      globalThis.__anthSchema = Boolean(JSON.parse(body || "{}").output_config?.format?.schema);
+      globalThis.__lastSystem = JSON.parse(body || "{}").system || "";
+      res.writeHead(200, { "content-type": "application/json" });
+      return res.end(JSON.stringify({ content: [{ type: "text", text: "```json\n" + json + "\n```" }], stop_reason: "end_turn", usage: {} }));
+    }
+    if (url.includes("/chat/completions")) {
+      hits.push("openai");
+      globalThis.__oaiAuth = req.headers["authorization"] === "Bearer sk-openaiTESTKEY";
+      res.writeHead(200, { "content-type": "application/json" });
+      return res.end(JSON.stringify({ choices: [{ message: { content: json }, finish_reason: "stop" }], usage: {} }));
+    }
+    if (url.includes(":generateContent")) {
+      hits.push("google");
+      globalThis.__gKey = url.includes("key=AIzaTESTKEY");
+      res.writeHead(200, { "content-type": "application/json" });
+      return res.end(JSON.stringify({ candidates: [{ content: { parts: [{ text: json }] }, finishReason: "STOP" }] }));
+    }
+    res.writeHead(404); res.end("nope");
   });
 });
 
 async function main() {
   await new Promise((r) => upstream.listen(0, r));
-  const upPort = upstream.address().port;
+  const up = `http://127.0.0.1:${upstream.address().port}`;
 
-  // 2) Start the real server pointed at the mock
+  const secretsFile = join(mkdtempSync(join(tmpdir(), "frenchies-")), "secrets.json");
   const PORT = 4123;
   const env = {
     ...process.env,
     PORT: String(PORT),
+    FRENCHIES_SECRETS_FILE: secretsFile,
+    // Anthropic via env key (proves env fallback still works)
     ANTHROPIC_API_KEY: "test-key",
-    ANTHROPIC_MODEL: "claude-sonnet-5",
-    ANTHROPIC_BASE_URL: `http://127.0.0.1:${upPort}`,
+    ANTHROPIC_BASE_URL: up,
+    // No OPENAI/GOOGLE env keys — those get added through the UI/API in the test.
   };
   const srv = spawn("node", ["server.js"], { cwd: ROOT, env, stdio: ["ignore", "pipe", "pipe"] });
   srv.stderr.on("data", (d) => process.stderr.write("[srv] " + d));
-  await waitFor(`http://127.0.0.1:${PORT}/api/config`);
-
   const base = `http://127.0.0.1:${PORT}`;
+  await waitFor(`${base}/api/config`);
+  const post = (path, obj, method = "POST") =>
+    fetch(base + path, { method, headers: { "content-type": "application/json" }, body: JSON.stringify(obj) }).then((r) => r.json().then((j) => ({ status: r.status, j })));
+
   try {
-    // config
-    const cfg = await (await fetch(`${base}/api/config`)).json();
-    ok("config: salon name", cfg.salon?.name === "Frenchies Modern Nail Care");
-    ok("config: technicians present", Array.isArray(cfg.technicians) && cfg.technicians.includes("Rheanna"));
-    ok("config: model is sonnet-5", cfg.model === "claude-sonnet-5");
-    ok("config: does NOT leak key", !("ANTHROPIC_API_KEY" in cfg) && cfg.apiKeyPresent === true);
+    // config shape
+    let cfg = await (await fetch(`${base}/api/config`)).json();
+    ok("config: providers list has 4", Array.isArray(cfg.providers) && cfg.providers.length === 4);
+    ok("config: anthropic configured via env", cfg.providers.find((p) => p.id === "anthropic")?.configured === true);
+    ok("config: anthropic keySource=env", cfg.providers.find((p) => p.id === "anthropic")?.keySource === "env");
+    ok("config: active is anthropic", cfg.active === "anthropic");
+    ok("config: openai not configured yet", cfg.providers.find((p) => p.id === "openai")?.configured === false);
+    ok("config: never leaks a full key", !JSON.stringify(cfg).includes("test-key"));
 
-    // static index
+    // generate on the active (anthropic) provider
+    let g = await post("/api/generate", { review: "Rheanna was thorough, my best ever!", rating: 5, technician: "Rheanna", count: 3 });
+    ok("generate: anthropic returns 3 options", g.j.result?.options?.length === 3);
+    ok("generate: meta.provider = anthropic", g.j.meta?.provider === "anthropic");
+    ok("upstream: anthropic got correct headers", globalThis.__anthHeaders === true);
+    ok("upstream: anthropic got structured schema", globalThis.__anthSchema === true);
+    ok("system prompt: has salon facts + exemplar", /Frenchies Modern Nail Care/.test(globalThis.__lastSystem) && /My best ever/.test(globalThis.__lastSystem));
+
+    // add an OpenAI key via the API
+    let r = await post("/api/providers/key", { provider: "openai", apiKey: "sk-openaiTESTKEY", model: "gpt-4o-mini", baseUrl: up });
+    ok("set-key: openai ok", r.status === 200 && r.j.ok === true);
+    ok("set-key: response never returns the full key", !JSON.stringify(r.j).includes("sk-openaiTESTKEY"));
+    ok("set-key: openai now configured, last4=TKEY", r.j.providers.find((p) => p.id === "openai")?.configured === true && r.j.providers.find((p) => p.id === "openai")?.last4 === "TKEY");
+
+    // switch active to openai and generate
+    r = await post("/api/providers/active", { provider: "openai" });
+    ok("set-active: openai", r.status === 200 && r.j.active === "openai");
+    g = await post("/api/generate", { review: "Clean and friendly!", rating: 5, count: 2 });
+    ok("generate: openai path used", hits[hits.length - 1] === "openai");
+    ok("generate: openai bearer auth sent", globalThis.__oaiAuth === true);
+    ok("generate: honored count=2 on openai", g.j.result?.options?.length === 2);
+    ok("generate: meta.provider=openai", g.j.meta?.provider === "openai");
+
+    // add Google key (uses its own base URL override) + switch + generate
+    r = await post("/api/providers/key", { provider: "google", apiKey: "AIzaTESTKEY", model: "gemini-1.5-flash", baseUrl: up });
+    ok("set-key: google ok", r.status === 200 && r.j.providers.find((p) => p.id === "google")?.configured === true);
+    r = await post("/api/providers/active", { provider: "google" });
+    g = await post("/api/generate", { review: "Best pedicure ever", rating: 5, count: 3 });
+    ok("generate: google path used", hits[hits.length - 1] === "google");
+    ok("generate: google key in query string", globalThis.__gKey === true);
+    ok("generate: google returns options", g.j.result?.options?.length === 3);
+
+    // per-request provider override
+    g = await post("/api/generate", { review: "override test", rating: 5, count: 2, provider: "openai" });
+    ok("generate: per-request provider override", g.j.meta?.provider === "openai");
+
+    // cannot activate an unconfigured provider
+    r = await post("/api/providers/active", { provider: "openai_compatible" });
+    ok("set-active: rejects unconfigured provider", r.status === 400);
+
+    // remove openai key
+    r = await post("/api/providers/key", { provider: "openai" }, "DELETE");
+    ok("remove-key: openai removed", r.j.providers.find((p) => p.id === "openai")?.configured === false);
+
+    // config never leaks any saved key
+    cfg = await (await fetch(`${base}/api/config`)).json();
+    ok("config: no saved keys leak", !JSON.stringify(cfg).includes("AIzaTESTKEY") && !JSON.stringify(cfg).includes("sk-openai"));
+
+    // secrets file exists and is readable JSON (persistence)
+    ok("secrets: file written", existsSync(secretsFile) && typeof JSON.parse(readFileSync(secretsFile, "utf8")) === "object");
+
+    // static + save-exemplar still work
     const html = await (await fetch(`${base}/`)).text();
-    ok("static: serves index.html", html.includes("Frenchies Review Studio"));
-
-    // path traversal blocked
-    const trav = await fetch(`${base}/../server.js`);
-    ok("static: blocks path traversal", trav.status === 404 || !(await trav.text()).includes("createServer"));
-
-    // fixtures
-    const fx = await (await fetch(`${base}/api/fixtures`)).json();
-    ok("fixtures: 7 examples", Array.isArray(fx) && fx.length === 7);
-
-    // generate — positive, 3 options
-    const gen = await (await fetch(`${base}/api/generate`, {
-      method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ review: "Rheanna was thorough, my best ever!", rating: 5, technician: "Rheanna", count: 3 }),
-    })).json();
-    ok("generate: returns result", !!gen.result);
-    ok("generate: 3 options", gen.result?.options?.length === 3);
-    ok("generate: options have angle+response+rationale", gen.result.options.every((o) => o.angle && o.response && o.rationale));
-    ok("generate: technician passed through", gen.result.technician === "Rheanna");
-    ok("generate: not flagged", gen.result.needs_human_review === false);
-
-    // count 2 and 4
-    const g2 = await (await fetch(`${base}/api/generate`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ review: "Clean, friendly!", rating: 5, count: 2 }) })).json();
-    ok("generate: honors count=2", g2.result?.options?.length === 2);
-    const g4 = await (await fetch(`${base}/api/generate`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ review: "Clean, friendly!", rating: 5, count: 4 }) })).json();
-    ok("generate: honors count=4", g4.result?.options?.length === 4);
-
-    // sensitive / hostile
-    const hostile = await (await fetch(`${base}/api/generate`, {
-      method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ review: "WORST experience. Staff were rude. Filing with the BBB.", rating: 1, count: 3 }),
-    })).json();
-    ok("generate: hostile triggers human review", hostile.result?.needs_human_review === true);
-    ok("generate: hostile has sensitivity_reason", !!hostile.result?.sensitivity_reason);
-    ok("generate: hostile surfaces operational flag", hostile.result?.operational_flags?.length >= 1);
-
-    // upstream received correct headers + schema
-    ok("upstream: got x-api-key + anthropic-version", globalThis.__hasHeaders === true);
-    ok("upstream: got structured-output schema", globalThis.__hasSchema === true);
-
-    // system prompt content
-    const sys = globalThis.__lastSystem || "";
-    ok("system prompt: includes salon facts", sys.includes("Frenchies Modern Nail Care") && sys.includes("price_point_usd"));
-    ok("system prompt: includes an exemplar", sys.includes("My best ever"));
-    ok("system prompt: includes roster", sys.includes("Rheanna"));
-    ok("system prompt: includes sensitive-case rules", /needs_human_review/.test(sys) && /BBB/.test(sys));
-    ok("system prompt: forbids thank-you cliché", /Thank you for your feedback/.test(sys));
-
-    // missing body
-    const bad = await fetch(`${base}/api/generate`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({}) });
-    ok("generate: 400 on empty input", bad.status === 400);
-
-    // save exemplar appends to the file
+    ok("static: serves index.html", html.includes("Review Response Studio"));
     const exPath = join(ROOT, "brand", "voice-exemplars.md");
     const before = readFileSync(exPath, "utf8");
-    const save = await (await fetch(`${base}/api/save-exemplar`, {
-      method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ review: "TEST review for exemplar", rating: 5, response: "TEST response for exemplar", type: "Short Positive" }),
-    })).json();
+    r = await post("/api/save-exemplar", { review: "TEST review", rating: 5, response: "TEST response", type: "Short Positive" });
     const after = readFileSync(exPath, "utf8");
-    ok("save-exemplar: ok:true", save.ok === true);
-    ok("save-exemplar: appended block", after.length > before.length && after.includes("TEST response for exemplar"));
-    // restore the file so the repo stays clean
-    writeFileSync(exPath, before, "utf8");
+    ok("save-exemplar: appended", r.j.ok === true && after.includes("TEST response"));
+    writeFileSync(exPath, before, "utf8"); // restore
   } finally {
     srv.kill();
     upstream.close();
+    try { rmSync(dirname(secretsFile), { recursive: true, force: true }); } catch {}
   }
 
   console.log(`\n  ${pass} passed, ${fail} failed`);

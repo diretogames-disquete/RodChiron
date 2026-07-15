@@ -16,7 +16,14 @@
       <p class="sub" id="salonSub">Review Response Studio</p>
     </div>
   </div>
-  <div class="modelchip" id="modelChip"></div>
+  <div class="providerbar">
+    <select id="quickSwitch" class="quickswitch hidden" title="Active provider"></select>
+    <button id="keysBtn" class="providerchip" title="Manage API keys & providers">
+      <span class="pdot" id="pdot"></span>
+      <span id="activeLabel">API keys</span>
+      <span class="gear">⚙</span>
+    </button>
+  </div>
 </header>
 
 <main class="layout">
@@ -107,6 +114,31 @@
     <div id="errorBox" class="errorBox hidden"></div>
   </section>
 </main>
+
+<!-- Providers & API keys modal -->
+<div class="overlay" id="keysOverlay" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="keysTitle">
+    <div class="mh">
+      <h3 id="keysTitle">Providers &amp; API keys</h3>
+      <button class="x" id="keysClose" aria-label="Close">×</button>
+    </div>
+    <div class="mb">
+      <p class="lock">🔒 Keys are stored locally on this machine in a git-ignored file and sent only to
+        the provider you choose to run — never to the browser, never committed. After saving, a key
+        shows only its last 4 digits. Pick which provider is <b>active</b> to control which one (and its
+        token costs) you use.</p>
+      <div id="provList" class="provlist"></div>
+    </div>
+    <div class="mf">
+      <span class="muted" id="activeHint"></span>
+      <button class="primary sm" id="keysDone">Done</button>
+    </div>
+  </div>
+</div>
+
+<datalist id="anthropicModels"></datalist>
+<datalist id="openaiModels"></datalist>
+<datalist id="googleModels"></datalist>
 
 <div class="toast" id="toast"></div>
 <script src="/app.js"></script>

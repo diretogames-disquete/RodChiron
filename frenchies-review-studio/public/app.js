@@ -15,7 +15,15 @@ const state = {
 const el = {
   salonName: $("#salonName"),
   salonSub: $("#salonSub"),
-  modelChip: $("#modelChip"),
+  quickSwitch: $("#quickSwitch"),
+  keysBtn: $("#keysBtn"),
+  activeLabel: $("#activeLabel"),
+  pdot: $("#pdot"),
+  keysOverlay: $("#keysOverlay"),
+  keysClose: $("#keysClose"),
+  keysDone: $("#keysDone"),
+  provList: $("#provList"),
+  activeHint: $("#activeHint"),
   reviewText: $("#reviewText"),
   stars: $("#stars"),
   clearStar: $("#clearStar"),
@@ -68,10 +76,11 @@ async function init() {
       el.salonSub.textContent = `Review Response Studio${cfg.salon.city ? " · " + cfg.salon.city : ""}`;
       document.title = `${cfg.salon.name} — Review Studio`;
     }
-    el.modelChip.textContent = cfg.model || "";
-    if (cfg.apiKeyPresent === false) {
-      el.modelChip.textContent = "⚠ no API key — see README";
-      el.modelChip.classList.add("warn");
+    applyProviderState(cfg);
+    // model suggestion datalists
+    for (const p of cfg.providers || []) {
+      const dl = document.getElementById(`${p.id}Models`);
+      if (dl && p.models) dl.innerHTML = p.models.map((m) => `<option value="${esc(m)}"></option>`).join("");
     }
     // technicians
     for (const name of cfg.technicians || []) {
@@ -176,6 +185,7 @@ async function generate() {
     const data = await res.json();
     if (!res.ok || data.error) {
       showError(data.error || `Request failed (${res.status}).`);
+      if (data.needsSetup) openKeys();
       return;
     }
     state.lastResult = data.result;
@@ -301,6 +311,145 @@ async function saveExemplar(input, responseText, type) {
     toast("Could not save: " + e.message);
   }
 }
+
+// ---- providers & API keys ----
+function shortLabel(p) { return (p?.label || "").replace(/\s*\(.*\)$/, "") || (p?.id ?? ""); }
+
+function applyProviderState(cfg) {
+  state.config = cfg;
+  const providers = cfg.providers || [];
+  const active = cfg.active;
+  const activeP = providers.find((p) => p.id === active);
+  if (cfg.anyConfigured && activeP && activeP.configured) {
+    el.activeLabel.textContent = `${shortLabel(activeP)} · ${activeP.model}`;
+    el.keysBtn.classList.remove("warn");
+  } else {
+    el.activeLabel.textContent = "Set up API keys";
+    el.keysBtn.classList.add("warn");
+  }
+  const configured = providers.filter((p) => p.configured);
+  if (configured.length >= 2) {
+    el.quickSwitch.innerHTML = configured
+      .map((p) => `<option value="${p.id}"${p.id === active ? " selected" : ""}>${esc(shortLabel(p))} · ${esc(p.model)}</option>`)
+      .join("");
+    el.quickSwitch.classList.remove("hidden");
+  } else {
+    el.quickSwitch.classList.add("hidden");
+  }
+}
+
+function renderProviderList() {
+  const providers = state.config?.providers || [];
+  const active = state.config?.active;
+  el.provList.innerHTML = providers
+    .map((p) => {
+      const status = p.configured
+        ? `configured — ${p.keySource === "env" ? "from .env" : "saved"} · ••••${esc(p.last4 || "")}`
+        : p.hasKey
+        ? "key set — add a model"
+        : "not set";
+      return `
+      <div class="prow ${p.id === active ? "active" : ""}" data-prow="${p.id}">
+        <div class="ptop">
+          <label class="pradio">
+            <input type="radio" name="activeProvider" value="${p.id}" ${p.id === active ? "checked" : ""} ${p.configured ? "" : "disabled"} />
+            ${esc(shortLabel(p))}
+          </label>
+          <span class="pstatus ${p.configured ? "ok" : ""}">${status}</span>
+          <a class="pdocs" href="${esc(p.docs)}" target="_blank" rel="noopener">get a key ↗</a>
+        </div>
+        <div class="pfields">
+          ${p.needsBaseUrl ? `<div class="frow"><label>Base URL</label><input type="text" data-field="baseUrl" placeholder="${esc(p.baseUrlHint || "https://…/v1")}" value="${esc(p.baseUrl || "")}" /></div>` : ""}
+          <div class="frow"><label>Model</label><input type="text" data-field="model" list="${p.id}Models" placeholder="${esc(p.defaultModel || "model id")}" value="${esc(p.model || "")}" /></div>
+          <div class="frow">
+            <label>API key</label>
+            <input type="password" data-field="apiKey" autocomplete="off" placeholder="${p.hasKey ? "•••• saved — leave blank to keep" : esc(p.keyHint || "paste key")}" />
+            <button class="btn save" data-save="${p.id}">Save</button>
+            ${p.keySource === "saved" ? `<button class="btn remove" data-remove="${p.id}">Remove</button>` : ""}
+          </div>
+        </div>
+      </div>`;
+    })
+    .join("");
+  const ap = providers.find((p) => p.id === active);
+  el.activeHint.textContent = ap ? `Active: ${shortLabel(ap)}` : "No active provider — add a key, then pick one.";
+
+  el.provList.querySelectorAll("[data-save]").forEach((b) => b.addEventListener("click", () => saveKey(b.dataset.save)));
+  el.provList.querySelectorAll("[data-remove]").forEach((b) => b.addEventListener("click", () => removeKey(b.dataset.remove)));
+  el.provList.querySelectorAll('input[name="activeProvider"]').forEach((r) =>
+    r.addEventListener("change", () => { if (r.checked) setActiveProvider(r.value); })
+  );
+}
+
+async function refreshConfig() {
+  try {
+    applyProviderState(await (await fetch("/api/config")).json());
+  } catch (e) { /* ignore */ }
+}
+
+async function saveKey(provider) {
+  const row = el.provList.querySelector(`[data-prow="${provider}"]`);
+  if (!row) return;
+  const get = (f) => row.querySelector(`[data-field="${f}"]`);
+  const body = { provider };
+  const key = get("apiKey")?.value.trim();
+  if (key) body.apiKey = key;
+  body.model = get("model")?.value.trim() || "";
+  if (get("baseUrl")) body.baseUrl = get("baseUrl").value.trim();
+  try {
+    const res = await fetch("/api/providers/key", {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) return toast(data.error || "Could not save.");
+    if (get("apiKey")) get("apiKey").value = ""; // never keep the key in the field
+    await refreshConfig();
+    renderProviderList();
+    toast("Saved ✓");
+  } catch (e) { toast("Could not save: " + e.message); }
+}
+
+async function removeKey(provider) {
+  try {
+    const res = await fetch("/api/providers/key", {
+      method: "DELETE", headers: { "content-type": "application/json" }, body: JSON.stringify({ provider }),
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) return toast(data.error || "Could not remove.");
+    await refreshConfig();
+    renderProviderList();
+    toast("Key removed.");
+  } catch (e) { toast("Could not remove: " + e.message); }
+}
+
+async function setActiveProvider(provider) {
+  try {
+    const res = await fetch("/api/providers/active", {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ provider }),
+    });
+    const data = await res.json();
+    await refreshConfig();
+    if (el.keysOverlay.classList.contains("show")) renderProviderList();
+    if (!res.ok || data.error) return toast(data.error || "Could not switch.");
+    toast("Now using " + shortLabel((state.config.providers || []).find((p) => p.id === provider) || { id: provider }));
+  } catch (e) { toast("Could not switch: " + e.message); }
+}
+
+function openKeys() {
+  renderProviderList();
+  el.keysOverlay.classList.add("show");
+  el.keysOverlay.setAttribute("aria-hidden", "false");
+}
+function closeKeys() {
+  el.keysOverlay.classList.remove("show");
+  el.keysOverlay.setAttribute("aria-hidden", "true");
+}
+el.keysBtn.addEventListener("click", openKeys);
+el.keysClose.addEventListener("click", closeKeys);
+el.keysDone.addEventListener("click", closeKeys);
+el.keysOverlay.addEventListener("click", (e) => { if (e.target === el.keysOverlay) closeKeys(); });
+el.quickSwitch.addEventListener("change", () => setActiveProvider(el.quickSwitch.value));
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && el.keysOverlay.classList.contains("show")) closeKeys(); });
 
 el.generateBtn.addEventListener("click", generate);
 el.regenBtn.addEventListener("click", generate);
