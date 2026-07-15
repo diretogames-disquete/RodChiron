@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Frenchies Review Studio — Install &amp; Operate Guide</title>
+<style>
+:root{
+  --ink:#23201c; --ink-2:#4a453d; --muted:#7c7469; --bg:#f6f3ee; --surface:#fffdf9;
+  --line:#e6ddcf; --line-strong:#d8ccb9; --accent:#b6553a; --accent-soft:#f4e3da;
+  --code-bg:#f3efe7; --good:#2e7d55;
+  --sans: system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --mono: ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg); color:var(--ink); font-family:var(--sans); line-height:1.6; font-size:16px; -webkit-font-smoothing:antialiased;}
+.wrap{max-width:860px; margin:0 auto; padding:0 20px 60px;}
+.topbar{position:sticky; top:0; background:rgba(246,243,238,.92); backdrop-filter:blur(6px); display:flex; align-items:center; gap:11px; padding:13px 20px; border-bottom:1px solid var(--line); z-index:5;}
+.topbar .mark{width:28px;height:28px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#e29a7f,var(--accent));flex:0 0 auto;box-shadow:inset 0 0 0 2px #fff;}
+.topbar b{font-size:14px}
+.topbar .sp{flex:1}
+.printbtn{border:1px solid var(--accent); background:var(--accent); color:#fff; border-radius:8px; padding:8px 15px; font:inherit; font-size:13.5px; font-weight:650; cursor:pointer;}
+.printbtn:hover{background:#9c4830}
+.doc{background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:0 8px 30px rgba(35,32,28,.06); margin-top:26px; padding:46px 50px;}
+h1{font-size:30px; line-height:1.15; margin:0 0 6px; letter-spacing:-.02em;}
+.sub{color:var(--muted); font-size:15px; margin:0 0 4px; font-style:italic;}
+h2{font-size:21px; margin:36px 0 10px; padding-bottom:6px; border-bottom:2px solid var(--accent-soft); letter-spacing:-.01em;}
+h3{font-size:16.5px; margin:22px 0 6px;}
+h4{font-size:12.5px; margin:18px 0 4px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted);}
+p{margin:9px 0}
+a{color:var(--accent); text-decoration:none; border-bottom:1px solid var(--accent-soft);}
+ul,ol{margin:9px 0; padding-left:22px}
+li{margin:5px 0}
+strong{font-weight:650}
+code{font-family:var(--mono); font-size:.88em; background:var(--code-bg); padding:1.5px 5px; border-radius:5px;}
+pre{background:var(--code-bg); border:1px solid var(--line); border-radius:10px; padding:13px 15px; overflow-x:auto; font-size:13px; line-height:1.5;}
+pre code{background:none; padding:0;}
+blockquote{margin:14px 0; padding:11px 16px; background:var(--accent-soft); border-left:3px solid var(--accent); border-radius:0 8px 8px 0; color:var(--ink-2); font-size:14.5px;}
+blockquote p{margin:4px 0}
+table{width:100%; border-collapse:collapse; margin:14px 0; font-size:13.5px;}
+th,td{border:1px solid var(--line-strong); padding:8px 10px; text-align:left; vertical-align:top;}
+th{background:var(--code-bg); font-weight:650;}
+td code, th code{font-size:12px}
+.foot{color:var(--muted); font-size:13px; margin-top:30px; padding-top:16px; border-top:1px solid var(--line);}
+@media print{
+  @page{ margin:16mm; }
+  html,body{background:#fff}
+  .topbar{display:none}
+  .doc{box-shadow:none; border:0; border-radius:0; margin:0; padding:0; max-width:none;}
+  .wrap{max-width:none; padding:0;}
+  body{font-size:10.8pt; line-height:1.42;}
+  h1{font-size:21pt} h2{font-size:14.5pt; border-bottom:1px solid #ccc;} h3{font-size:12pt}
+  h2,h3,h4{break-after:avoid;}
+  pre,blockquote,table,tr,li{break-inside:avoid;}
+  a{color:var(--ink); border:0;}
+}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <span class="mark"></span><b>Frenchies Review Studio</b><span class="sp"></span>
+  <button class="printbtn" onclick="window.print()">⎙ Print / Save as PDF</button>
+</div>
+<div class="wrap">
+<article class="doc">
+
+<h1>Install &amp; Operate Guide</h1>
+<p class="sub">The technical manual. A companion plain-language guide for owners is in OWNER-GUIDE.</p>
+<blockquote><p><b>Tip:</b> to make a PDF, click <b>Print / Save as PDF</b> above (or press Ctrl/Cmd-P) and choose <b>“Save as PDF”</b> as the destination.</p></blockquote>
+
+<h2>1. What it is</h2>
+<p>A local app that turns a pasted client review + star rating into an <strong>array of distinct, ready-to-post reply options</strong> in the salon's own voice, each with a one-line rationale, plus operational flags and a token/cost readout. It is <strong>not</strong> an auto-responder: you always pick and can edit before anything is used, and it never posts anything itself.</p>
+<p>There are <strong>two ways to run it</strong>, sharing the same logic:</p>
+<table>
+<tr><th></th><th>Server version</th><th>Standalone file</th></tr>
+<tr><td>File</td><td>the <code>frenchies-review-studio/</code> folder</td><td><code>standalone.html</code> (one file)</td></tr>
+<tr><td>Needs</td><td>Node.js installed</td><td>just a browser</td></tr>
+<tr><td>Where the API key lives</td><td>a local server (<code>.secrets.json</code> / <code>.env</code>), <strong>not</strong> the browser</td><td>your browser's <code>localStorage</code></td></tr>
+<tr><td>How the model is called</td><td>browser → your local server → provider</td><td>browser → provider (direct)</td></tr>
+<tr><td>Brand config</td><td>editable files in <code>/brand</code></td><td>embedded + in-app editor</td></tr>
+<tr><td>Best when</td><td>you want keys off the browser; full file editing</td><td>you want zero install / one portable file</td></tr>
+</table>
+
+<h2>2. Requirements</h2>
+<ul>
+<li><strong>Server version:</strong> <a href="https://nodejs.org">Node.js</a> <strong>20.12 or newer</strong> (Node 22 recommended). No other dependencies — the app has <strong>zero npm packages</strong>.</li>
+<li><strong>Standalone file:</strong> any modern browser (Chrome, Edge, Firefox, Safari). No Node.</li>
+<li><strong>Either way:</strong> at least one <strong>provider API key</strong> (see §5).</li>
+</ul>
+<p>Verify Node:</p>
+<pre><code>node --version    # expect v20.12+ or v22.x</code></pre>
+
+<h2>3. Get the code</h2>
+<p><strong>Clone</strong> (preserves the executable bit on the macOS launcher):</p>
+<pre><code>git clone https://github.com/diretogames-disquete/rodchiron.git
+cd rodchiron
+git checkout claude/1sg-personnel-dashboard-xieo1l
+cd frenchies-review-studio</code></pre>
+<p><strong>Or download a ZIP:</strong> on GitHub, switch to the branch → <strong>Code ▸ Download ZIP</strong> → unzip → open the <code>frenchies-review-studio</code> folder.</p>
+<p><strong>Or just the standalone file:</strong> open <code>frenchies-review-studio/standalone.html</code> on GitHub → click <strong>Download raw file</strong> (the ⬇ icon) → double-click the file.</p>
+
+<h2>4. Run it — server version</h2>
+<h3>4a. One command</h3>
+<p>From inside the <code>frenchies-review-studio</code> folder:</p>
+<pre><code>npm start          # equivalent to: node server.js</code></pre>
+<p>You'll see <code>▸ http://localhost:3000</code>. Open it. Stop with <strong>Ctrl-C</strong>.</p>
+<h3>4b. No-terminal launchers</h3>
+<p>Double-click, no terminal:</p>
+<ul>
+<li><strong>macOS:</strong> <code>start.command</code> (first run: if macOS blocks it, right-click → <strong>Open</strong> → <strong>Open</strong>; if it opens in a text editor after a ZIP download, run <code>chmod +x start.command</code> once).</li>
+<li><strong>Windows:</strong> <code>start.bat</code>.</li>
+</ul>
+<p>Each checks for Node, starts the server, and opens the browser.</p>
+<h3>4c. Ports &amp; env</h3>
+<pre><code>PORT=3001 npm start           # macOS / Linux, if 3000 is taken</code></pre>
+<p>Optional <code>.env</code> (copy from <code>.env.example</code>):</p>
+<pre><code>ANTHROPIC_API_KEY=sk-ant-...
+# OPENAI_API_KEY=sk-...
+# GOOGLE_API_KEY=AIza...
+# ANTHROPIC_MODEL=claude-sonnet-5
+PORT=3000</code></pre>
+<p>Keys added <strong>in the app</strong> are stored in <code>.secrets.json</code> and <strong>take precedence</strong> over <code>.env</code>. Both files are git-ignored.</p>
+
+<h2>5. Providers &amp; API keys</h2>
+<p>The app runs on whichever provider you choose, so you control cost:</p>
+<table>
+<tr><th>Provider</th><th>Get a key</th><th>Default model</th><th>Notes</th></tr>
+<tr><td>Anthropic (Claude)</td><td>console.anthropic.com</td><td><code>claude-sonnet-5</code></td><td>Also <code>claude-opus-4-8</code>, <code>claude-haiku-4-5</code>.</td></tr>
+<tr><td>OpenAI (GPT)</td><td>platform.openai.com/api-keys</td><td><code>gpt-4o-mini</code></td><td>Cheap default; also <code>gpt-4o</code>, <code>gpt-4.1</code>.</td></tr>
+<tr><td>Google (Gemini)</td><td>aistudio.google.com/app/apikey</td><td><code>gemini-1.5-flash</code></td><td>Very cheap.</td></tr>
+<tr><td>OpenAI-compatible</td><td>e.g. openrouter.ai/keys</td><td>—</td><td>Any endpoint speaking the OpenAI Chat Completions API — <strong>OpenRouter, Groq, DeepSeek, Together, local</strong>. Enter a base URL + key + model. Widest cost lever.</td></tr>
+</table>
+<p><strong>Add / switch keys:</strong> click <strong>API keys</strong> in the header. Per provider you can set the key, the model (free text with suggestions — type any model id), and (for OpenAI-compatible) a base URL, then choose which provider is <strong>active</strong>. A <strong>quick-switch</strong> appears in the header once two or more are configured.</p>
+<p><strong>Per-request override:</strong> the <strong>Run this with</strong> picker (above <em>Generate</em>) lets you pick provider + model for a single run without changing your default.</p>
+<blockquote><p><strong>Standalone CORS caveat:</strong> the standalone file calls providers directly from the browser, so it's subject to CORS. <strong>Anthropic, Google, and OpenAI-compatible providers (OpenRouter/Groq/etc.) work in-browser; first-party OpenAI is often blocked</strong> — the settings panel flags this. If a provider is blocked in the standalone file, use the server version (no CORS limitation) or route through OpenRouter.</p></blockquote>
+
+<h2>6. Using it (workflow)</h2>
+<ol>
+<li><strong>Paste the review</strong> and pick a <strong>star rating</strong> (1–5).</li>
+<li>Optional: <strong>technician</strong>, <strong>platform</strong>, <strong>context notes</strong> ("regular client", "resolved offline"), and <strong>number of options</strong> (2–4).</li>
+<li><strong>Run this with</strong> — choose provider + model for this run (defaults to active).</li>
+<li><strong>Generate.</strong> The results pane shows: the detected <strong>review type</strong> (editable), the technician detected, a red <strong>"Needs owner / legal sign-off"</strong> banner for sensitive cases (§9), a <strong>usage/cost bar</strong>, <strong>option cards</strong> (angle · editable response · rationale · live char count · Copy · Save as exemplar), an <strong>operational flags</strong> panel (internal only), and a <strong>roster note</strong> if a review named an unknown tech.</li>
+<li><strong>Regenerate</strong> re-rolls fresh angles. Edit any response inline before copying.</li>
+<li>Paste your chosen reply into Google/Yelp/etc. yourself.</li>
+</ol>
+<p>Keyboard: <strong>Ctrl/Cmd-Enter</strong> in the review box triggers Generate.</p>
+<p><strong>The learning loop:</strong> click <strong>Save as exemplar</strong> on a reply you like. The server version appends it to <code>brand/voice-exemplars.md</code>; the standalone stores it in the browser. The app prefers the most recent exemplars as few-shot anchors, so the voice sharpens with use.</p>
+
+<h2>7. Customizing the voice (brand config)</h2>
+<h3>Server version — editable files in <code>/brand</code></h3>
+<p>Re-read on every generation, so edit a file and generate again:</p>
+<table>
+<tr><th>File</th><th>Controls</th></tr>
+<tr><td><code>brand-voice.md</code></td><td>The voice principles and the hard "never"s.</td></tr>
+<tr><td><code>voice-exemplars.md</code></td><td>Approved responses used as few-shot anchors (learning loop appends here).</td></tr>
+<tr><td><code>salon-facts.json</code></td><td>The only facts the model may assert — name, city, <code>price_point_usd</code>, sterilization, etc.</td></tr>
+<tr><td><code>technicians.json</code></td><td>The roster (name, archetype, note). Don't invent archetypes.</td></tr>
+<tr><td><code>review-response-library.md</code></td><td>Response patterns + opener-rotation banks.</td></tr>
+<tr><td><code>operational-flags.md</code></td><td>Systemic issues to watch for.</td></tr>
+<tr><td><code>pricing.json</code> (root)</td><td>USD per 1,000,000 tokens per model, for the cost estimate.</td></tr>
+</table>
+<h3>Standalone version — in-app + embedded</h3>
+<ul>
+<li><strong>Settings ▸ Salon &amp; voice:</strong> edit salon name, city, <strong>price</strong>, sign-off, and the technician roster (persisted to the browser).</li>
+<li><strong>Voice principles, exemplars, pricing</strong> are embedded — edit the <code>BRAND_DEFAULT</code> and <code>PRICES</code> blocks in the HTML source to change them.</li>
+<li><strong>Voice library export/import:</strong> carry your salon settings, roster, and saved responses to another device (Settings ▸ Salon &amp; voice ▸ Export / Import). <strong>API keys are never included.</strong></li>
+</ul>
+
+<h2>8. Cost &amp; tokens</h2>
+<p>The usage/cost bar shows <code>provider · model · N in / N out tokens · ~$cost (est.)</code>. A single reply is typically a few hundred to ~1,500 input tokens and a few hundred output — <strong>about a penny on the premium model, a fraction of a cent on the budget models</strong>.</p>
+<ul>
+<li><strong>Estimates</strong> come from <code>pricing.json</code> (USD per 1M tokens). Edit it to your real rates, and add any model id you use to get a readout. Unknown models show tokens only.</li>
+<li><strong>To cut cost:</strong> use the Run-this-with picker to run routine replies on a cheap model (<code>gpt-4o-mini</code>, <code>gemini-1.5-flash</code>, or a budget OpenRouter model) and reserve a premium model for tricky ones.</li>
+</ul>
+
+<h2>9. Sensitive-case handling</h2>
+<p>Before writing, the model screens the review. It sets <code>needs_human_review</code> and shows the red banner when a review involves any of:</p>
+<ul>
+<li>hostility / abuse,</li>
+<li>a <strong>BBB / legal / attorney / lawsuit</strong> mention,</li>
+<li>an <strong>injury or health-harm</strong> claim,</li>
+<li>an accusation of <strong>unsanitary</strong> practice, or</li>
+<li>a <strong>misdirected</strong> review (mentions services the salon doesn't offer, or traits inconsistent with the salon).</li>
+</ul>
+<p>For these it still drafts options, but keeps them factual and calm and marks each card <strong>"draft — needs review."</strong> Never treat these as one-click safe.</p>
+
+<h2>10. Data, privacy &amp; backups</h2>
+<ul>
+<li><strong>Keys:</strong> server → <code>.secrets.json</code> (chmod 600) or <code>.env</code>, <strong>never sent to the browser</strong> (only last-4 shown). Standalone → the browser's <code>localStorage</code>, sent only to the provider you run.</li>
+<li><strong>Reviews</strong> you paste are sent to the active provider to generate a reply.</li>
+<li><strong>On disk (server):</strong> <code>.secrets.json</code>, <code>/brand/*</code>, <code>pricing.json</code> — back these up to preserve your setup.</li>
+<li><strong>In the browser (standalone):</strong> keys + salon overrides + saved responses. Use <strong>Export voice library</strong> to back up everything except keys.</li>
+<li><strong>OPSEC:</strong> a productivity aid, not a system of record. Don't paste clients' full personal data.</li>
+</ul>
+
+<h2>11. Architecture (brief)</h2>
+<ul>
+<li><strong>Server:</strong> a zero-dependency Node HTTP server (<code>server.js</code>) serving <code>/public</code> and a small API; uses built-in <code>fetch</code> and <code>process.loadEnvFile()</code>.</li>
+<li><strong>Provider layer</strong> (<code>lib/providers.js</code>): per-provider wire formats — Anthropic Messages API (structured outputs), OpenAI / OpenAI-compatible Chat Completions, Google <code>generateContent</code>. Config resolves from <code>.secrets.json</code> first, then <code>.env</code>.</li>
+<li><strong>Robust output:</strong> a fence-stripping <code>JSON.parse</code>-in-<code>try/catch</code> parser plus a normalizer coerce every provider's output into the contract; failures show a friendly error + Regenerate.</li>
+<li><strong>Prompt</strong> (<code>lib/buildSystemPrompt.js</code>): assembled at request time from the brand files — the voice is data-driven, not hardcoded.</li>
+</ul>
+<p><strong>API routes:</strong> <code>GET /api/config</code>, <code>GET /api/fixtures</code>, <code>POST /api/generate</code>, <code>POST /api/save-exemplar</code>, <code>POST|DELETE /api/providers/key</code>, <code>POST /api/providers/active</code>.</p>
+<p><strong>Tests:</strong></p>
+<pre><code>npm test    # 37 checks against a mock upstream — no key or network needed</code></pre>
+
+<h2>12. Troubleshooting</h2>
+<table>
+<tr><th>Symptom</th><th>Fix</th></tr>
+<tr><td>"No provider is set up yet"</td><td>Open <strong>API keys</strong>, add a key + model, set it active.</td></tr>
+<tr><td><code>Model API error (401)</code></td><td>Wrong/expired API key. Re-paste it.</td></tr>
+<tr><td><code>error (404)</code> / unknown model</td><td>The model id doesn't exist for that provider — type a valid one in the model field.</td></tr>
+<tr><td>Standalone: "Couldn't reach … (CORS)"</td><td>That provider blocks direct browser calls. Use Anthropic, Google, or OpenRouter — or the server version.</td></tr>
+<tr><td>Port 3000 in use</td><td><code>PORT=3001 npm start</code>, or set <code>PORT</code> in <code>.env</code>.</td></tr>
+<tr><td>macOS: <code>start.command</code> won't open</td><td>Right-click → <strong>Open</strong> → <strong>Open</strong>. If it opens in a text editor, <code>chmod +x start.command</code> once.</td></tr>
+<tr><td>"Could not save (browser storage blocked?)"</td><td>The standalone needs <code>localStorage</code>; don't run it in private/incognito with storage disabled.</td></tr>
+<tr><td>Malformed reply / parse error</td><td>Click <strong>Regenerate</strong>; try a stronger model if it recurs.</td></tr>
+<tr><td>Prices look wrong</td><td>Edit <code>pricing.json</code> (server) or the <code>PRICES</code> block (standalone).</td></tr>
+</table>
+
+<h2>13. Updating &amp; uninstalling</h2>
+<ul>
+<li><strong>Update:</strong> <code>git pull</code> (if cloned), or re-download. Your <code>.secrets.json</code>, <code>/brand</code> edits, and <code>pricing.json</code> are preserved. For the standalone, <strong>Export voice library</strong> first, replace the file, then <strong>Import</strong>.</li>
+<li><strong>Uninstall:</strong> delete the folder (server) or the file (standalone). To wipe standalone data without deleting the file, clear the site's browser storage.</li>
+</ul>
+
+<p class="foot">Frenchies Review Studio — Install &amp; Operate Guide. Companion for owners: OWNER-GUIDE.</p>
+</article>
+</div>
+</body>
+</html>

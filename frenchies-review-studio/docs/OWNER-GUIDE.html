@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Frenchies Review Studio — The Owner's Guide</title>
+<style>
+:root{
+  --ink:#23201c; --ink-2:#4a453d; --muted:#7c7469; --bg:#f6f3ee; --surface:#fffdf9;
+  --line:#e6ddcf; --line-strong:#d8ccb9; --accent:#b6553a; --accent-soft:#f4e3da;
+  --code-bg:#f3efe7; --good:#2e7d55; --good-bg:#e7f1ea;
+  --sans: system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg); color:var(--ink); font-family:var(--sans); line-height:1.65; font-size:16.5px; -webkit-font-smoothing:antialiased;}
+.wrap{max-width:820px; margin:0 auto; padding:0 20px 60px;}
+.topbar{position:sticky; top:0; background:rgba(246,243,238,.92); backdrop-filter:blur(6px); display:flex; align-items:center; gap:11px; padding:13px 20px; border-bottom:1px solid var(--line); z-index:5;}
+.topbar .mark{width:28px;height:28px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#e29a7f,var(--accent));flex:0 0 auto;box-shadow:inset 0 0 0 2px #fff;}
+.topbar b{font-size:14px}
+.topbar .sp{flex:1}
+.printbtn{border:1px solid var(--accent); background:var(--accent); color:#fff; border-radius:8px; padding:8px 15px; font:inherit; font-size:13.5px; font-weight:650; cursor:pointer;}
+.printbtn:hover{background:#9c4830}
+.doc{background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:0 8px 30px rgba(35,32,28,.06); margin-top:26px; padding:48px 52px;}
+h1{font-size:32px; line-height:1.12; margin:0 0 8px; letter-spacing:-.02em;}
+.sub{color:var(--muted); font-size:15px; margin:0 0 4px; font-style:italic;}
+h2{font-size:22px; margin:38px 0 10px; padding-bottom:6px; border-bottom:2px solid var(--accent-soft); letter-spacing:-.01em;}
+h3{font-size:17px; margin:24px 0 6px;}
+p{margin:11px 0}
+a{color:var(--accent); text-decoration:none; border-bottom:1px solid var(--accent-soft);}
+ul,ol{margin:11px 0; padding-left:24px}
+li{margin:7px 0}
+ol.big{counter-reset:step; list-style:none; padding-left:0;}
+ol.big>li{position:relative; padding-left:42px; margin:12px 0;}
+ol.big>li::before{counter-increment:step; content:counter(step); position:absolute; left:0; top:-1px; width:28px; height:28px; border-radius:50%; background:var(--accent-soft); color:var(--accent); font-weight:700; font-size:14px; display:flex; align-items:center; justify-content:center;}
+strong{font-weight:650}
+.lead{font-size:18px; color:var(--ink-2);}
+.callout{margin:16px 0; padding:14px 18px; background:var(--accent-soft); border-left:3px solid var(--accent); border-radius:0 10px 10px 0;}
+.callout.good{background:var(--good-bg); border-left-color:var(--good);}
+.callout p{margin:5px 0}
+.cols{display:grid; grid-template-columns:1fr 1fr; gap:22px; margin:12px 0;}
+.card{border:1px solid var(--line); border-radius:12px; padding:14px 16px; background:#fff;}
+.card h3{margin:0 0 4px; font-size:15px;}
+.card p{margin:2px 0; font-size:14.5px; color:var(--ink-2);}
+.foot{color:var(--muted); font-size:13px; margin-top:32px; padding-top:16px; border-top:1px solid var(--line);}
+.q{font-weight:650; margin:14px 0 2px;}
+@media print{
+  @page{ margin:15mm; }
+  html,body{background:#fff}
+  .topbar{display:none}
+  .doc{box-shadow:none; border:0; border-radius:0; margin:0; padding:0; max-width:none;}
+  .wrap{max-width:none; padding:0;}
+  body{font-size:11pt; line-height:1.45;}
+  h1{font-size:22pt} h2{font-size:15pt; border-bottom:1px solid #ccc;} h3{font-size:12.5pt}
+  h2,h3{break-after:avoid;} .callout,.card,li{break-inside:avoid;}
+  .cols{gap:14px}
+  a{color:var(--ink); border:0;}
+}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <span class="mark"></span><b>Frenchies Review Studio</b><span class="sp"></span>
+  <button class="printbtn" onclick="window.print()">⎙ Print / Save as PDF</button>
+</div>
+<div class="wrap">
+<article class="doc">
+
+<h1>Your Reviews, Answered in Your Voice</h1>
+<p class="sub">The owner's guide — plain language, no tech background needed.</p>
+<div class="callout"><p><b>Tip:</b> to save this as a PDF, click <b>Print / Save as PDF</b> at the top (or press Ctrl/Cmd-P) and choose <b>“Save as PDF.”</b></p></div>
+
+<h2>Why this matters (the 2-minute pitch)</h2>
+<p class="lead">When you reply to a review, you're not really writing to that one client. You're writing to the next 50 people who read it before they decide whether to book.</p>
+<p>Your review section is a sales page you don't control — but your <em>replies</em> are the part you <em>do</em>. A warm, specific, human reply says "real people work here, they pay attention, and they care." A copy-pasted "Thank you for your feedback!" says the opposite — it reads like a robot, and everyone can tell.</p>
+<p>The problem: writing a genuinely good, different reply to every review takes time and energy you don't have after a full day on the floor. So most owners skip it or paste the same line every time.</p>
+<p><strong>This tool fixes that.</strong> You paste in a review, and in a few seconds it gives you <strong>2–4 genuinely different reply options written in your salon's voice</strong> — each with a one-line note on <em>why</em> that angle works — so you just pick one, tweak a word if you want, and post it. It's the difference between a blank page and a short, easy decision.</p>
+<p>What makes it different from generic "AI reply" tools:</p>
+<ul>
+<li><strong>It sounds like <em>you</em>, not a robot.</strong> Your voice, salon facts, and technicians are built in. It opens by reacting to what the reviewer actually said — never "Thank you for your feedback."</li>
+<li><strong>It gives you a real choice.</strong> Two to four different <em>strategies</em>, not the same sentence reworded.</li>
+<li><strong>It protects you.</strong> Nasty reviews, legal/BBB threats, or anything about an injury get flagged <strong>"needs your sign-off"</strong> so you slow down and handle them carefully.</li>
+<li><strong>It never makes things up.</strong> No invented prices, no fake enthusiasm, no promises you didn't make.</li>
+<li><strong>You control the cost.</strong> Replies cost roughly a penny each (often less), and you choose which AI it uses.</li>
+</ul>
+<p>Nothing is ever posted automatically. You always pick and can edit first.</p>
+
+<h2>What you'll need</h2>
+<ul>
+<li>A computer (Mac or Windows).</li>
+<li>About 10 minutes to set it up once.</li>
+<li><strong>One "API key."</strong> Think of it like a prepaid arcade card for the AI: you get a key from an AI company, and each reply spends a tiny bit of credit (about a penny or less). We'll walk through it.</li>
+</ul>
+
+<h2>Setting it up (pick the easy path)</h2>
+<div class="cols">
+  <div class="card">
+    <h3>Path A — The double-click app <span style="color:var(--accent)">(recommended)</span></h3>
+    <p>1. Install Node.js once: go to <b>nodejs.org</b>, download the green <b>“LTS”</b> button, run the installer.</p>
+    <p>2. Get the app folder onto your computer.</p>
+    <p>3. Double-click <b>start.command</b> (Mac) or <b>start.bat</b> (Windows).</p>
+    <p>4. A small window opens and your browser pops up at the app. Keep that window open while you use it.</p>
+  </div>
+  <div class="card">
+    <h3>Path B — The single file (no install)</h3>
+    <p>1. Get the file <b>standalone.html</b> onto your computer.</p>
+    <p>2. <b>Double-click it.</b> It opens in your browser. That's it.</p>
+    <p style="margin-top:8px; font-size:13px; color:var(--muted)">Works best with an Anthropic, Google, or OpenRouter key. If an OpenAI key won't connect, use Path A or switch providers — the app will tell you.</p>
+  </div>
+</div>
+<p><em>macOS note for Path A:</em> the first time, if your Mac says <b>start.command</b> is blocked, right-click it → <b>Open</b> → <b>Open</b>.</p>
+
+<h3>Getting your AI key</h3>
+<p>Click <strong>"API keys"</strong> (top-right of the app). Pick one provider to start — any of these work well:</p>
+<ul>
+<li><strong>Anthropic (Claude)</strong> — great writing quality. Sign up at <b>console.anthropic.com</b>, add a little credit, create a key.</li>
+<li><strong>Google (Gemini)</strong> — very cheap. Get a key at <b>aistudio.google.com/app/apikey</b>.</li>
+<li><strong>OpenRouter</strong> — one key that reaches many models, good for low cost. Get one at <b>openrouter.ai/keys</b> (in the app, choose the "OpenAI-compatible" row and paste <b>https://openrouter.ai/api/v1</b> as the base URL).</li>
+</ul>
+<p>Paste the key, click <strong>Save</strong>, make sure that provider is selected (the dot), and close the window. You're ready.</p>
+<div class="callout good"><p><strong>Is my key safe?</strong> Yes. In the double-click app, your key stays on your own computer and is never shown back to you (only the last 4 digits). In the single file, it's saved in your own browser on your own device. Just don't email the file to other people with your key saved in it.</p></div>
+
+<h2>Your first reply (60 seconds)</h2>
+<ol class="big">
+<li><strong>Paste the review</strong> into the big box.</li>
+<li><strong>Click the stars</strong> to match the rating.</li>
+<li>If the review names one of your techs, pick them from <strong>Technician</strong> (or type the name).</li>
+<li>Click <strong>Generate responses.</strong></li>
+<li>Read the little <strong>"Why this angle"</strong> under each option and <strong>pick your favorite.</strong> Tweak a word or two if you want it to sound even more like you.</li>
+<li>Click <strong>Copy</strong>, go to Google/Yelp/Facebook, and <strong>paste</strong> it as your reply.</li>
+</ol>
+<p>That's the whole loop. After a couple of tries it takes under a minute per review.</p>
+
+<h2>Getting the most out of it</h2>
+<p>These habits turn "replying to reviews" into real marketing:</p>
+<ol>
+<li><strong>Reply to <em>every</em> review, and do it fast.</strong> Within a day or two. Fresh replies signal an attentive business. This removes the "I don't know what to write" excuse.</li>
+<li><strong>Reply to the bad ones <em>calmly</em> — that's the real win.</strong> A graceful, non-defensive reply to a 2-star review impresses readers more than ten 5-star replies. You're writing for the next 50 readers, not to win the argument. The tool is built for this — and flags the truly nasty or legal ones.</li>
+<li><strong>Name your technicians.</strong> When a reviewer names Rheanna or Amber, the reply celebrates them by name — it builds each tech a following and shows a real team. (Edit your roster in <strong>Settings ▸ Salon &amp; voice</strong>.)</li>
+<li><strong>Keep your price current.</strong> Set your real price in Settings. When someone grumbles about cost, the tool gently frames the <em>value</em> (natural-nail care, real sterilization, single-use files) — never argues the number.</li>
+<li><strong>"Save as exemplar" the replies you love.</strong> The tool learns from those and gets more "you" over time.</li>
+<li><strong>Turn raves into marketing.</strong> For standout reviews, one option is a "testimonial invitation" — a gracious way to ask permission to feature their words.</li>
+<li><strong>Let it flag the scary ones.</strong> Lawyer, BBB, injury, or a review meant for a different business → a red <strong>"needs your sign-off"</strong> banner. Handle those slowly, with help if needed.</li>
+<li><strong>Keep costs tiny.</strong> The little line above the replies shows about how much each one cost. Use a cheap model for everyday replies (pick it in <strong>"Run this with"</strong>); save the premium one for high-stakes reviews.</li>
+</ol>
+
+<h2>A simple weekly routine (about 10 minutes)</h2>
+<ol class="big">
+<li>Open the app (double-click the launcher, or the file).</li>
+<li>Open Google/Yelp/Facebook and find reviews you haven't answered.</li>
+<li>For each: paste it in → set stars → pick the tech → <strong>Generate</strong> → pick → tweak → <strong>Copy</strong> → paste as your reply.</li>
+<li>Any red-flagged ones: set aside and handle carefully (or with help).</li>
+</ol>
+<p>Ten minutes a week keeps your review section looking alive and human.</p>
+
+<h2>Do's and don'ts</h2>
+<div class="cols">
+  <div class="card">
+    <h3 style="color:var(--good)">Do</h3>
+    <p>• Read every reply before you post it — make it sound like <em>you</em>.</p>
+    <p>• Answer the negatives; they're your biggest opportunity.</p>
+    <p>• Keep your price and technician list up to date.</p>
+    <p>• Save the replies you love so the voice keeps improving.</p>
+  </div>
+  <div class="card">
+    <h3 style="color:var(--accent)">Don't</h3>
+    <p>• Don't post without reading (it never posts for you — on purpose).</p>
+    <p>• Don't argue with an unhappy client in public; own what's fair, take specifics to a private message.</p>
+    <p>• Don't paste a client's private personal details.</p>
+    <p>• Don't share the single-file version with your key saved in it.</p>
+  </div>
+</div>
+
+<h2>Common questions</h2>
+<p class="q">Does it post replies for me?</p>
+<p>No — never. You always copy and paste it yourself, so you're in full control.</p>
+<p class="q">What does it cost to run?</p>
+<p>Roughly a penny per reply on the top-quality AI, and a fraction of a cent on the budget ones. You pay the AI company directly; the app itself is free.</p>
+<p class="q">Where does my key/data go?</p>
+<p>Your key stays on your device. The reviews you paste are sent to the AI you chose (just like typing into any AI tool) to write the reply.</p>
+<p class="q">What if a review names a technician I don't have?</p>
+<p>The tool notices and quietly asks if you want to add that name to your roster — it won't invent a person.</p>
+<p class="q">Can my front-desk person use it?</p>
+<p>Yes. It's simple enough for anyone on your team to run the weekly routine. Just make sure they read replies before posting, especially the flagged ones.</p>
+<p class="q">Can I move my setup to another computer?</p>
+<p>In the single-file version, use <strong>Settings ▸ Salon &amp; voice ▸ Export voice library</strong> to save your settings and favorite replies, then <strong>Import</strong> them on the other computer. (Your key isn't included — re-enter that once.)</p>
+
+<p class="foot">Frenchies Review Studio — The Owner's Guide. Need the nuts and bolts? See the Install &amp; Operate Guide.</p>
+</article>
+</div>
+</body>
+</html>
