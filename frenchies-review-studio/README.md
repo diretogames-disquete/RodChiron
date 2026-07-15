@@ -40,14 +40,28 @@ Then add at least one provider key — either in the app (click **API keys** in 
 top-right) or via `.env` (`cp .env.example .env`). Keys are read **server-side**
 and never sent to the browser.
 
+### No-terminal launchers (double-click)
+
+Don't want to use the terminal? After installing Node.js once, just double-click:
+
+- **macOS:** `start.command` (first time only: if macOS blocks it, right-click the
+  file → **Open** → **Open**).
+- **Windows:** `start.bat`.
+
+Either one starts the server and opens **http://localhost:3000** in your browser.
+Keep the little window open while you use the app; close it to stop.
+
 ## Two ways to run it
 
 - **Server version (recommended): `npm start`** — the setup above. Your API key
   stays on a small local server and never touches the browser. Full brand-file
   editing.
 - **Single standalone file: `standalone.html`** — just double-click it; no Node,
-  no install. Everything runs in your browser. Because there's no server, the
-  model call goes **straight from your browser to the provider**, which means:
+  no install. **To grab only this file:** open `frenchies-review-studio/standalone.html`
+  on GitHub and click the **Download raw file** button (the ⬇ icon at the top-right
+  of the file view), then double-click the downloaded file. Everything runs in your
+  browser. Because there's no server, the model call goes **straight from your
+  browser to the provider**, which means:
   - Your API key is stored in **that browser** (localStorage) on your device.
     Fine for a personal tool on your own machine — just don't host the file
     publicly with a key saved.
@@ -60,6 +74,10 @@ and never sent to the browser.
     price, and technician roster are editable in-app (Settings → Salon & voice),
     and "Save as exemplar" persists in the browser. To change the voice
     principles, edit the `BRAND_DEFAULT` block in the file's source.
+  - **Move your voice library between devices:** Settings → Salon & voice →
+    **Export voice library** saves your salon settings, technician roster, and
+    saved responses to a JSON file (never your API keys). **Import** it into the
+    standalone file on another computer/browser to carry your voice over.
 
 ## Providers & API keys (bring your own, switch anytime)
 

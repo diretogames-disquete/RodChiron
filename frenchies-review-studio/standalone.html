@@ -71,6 +71,10 @@ button { font-family: inherit; cursor: pointer; }
 .salongrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .salongrid .field { margin-top: 0; }
 .salongrid .full { grid-column: 1 / -1; }
+.vlsec { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
+.vlsec h4 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-2); margin: 0 0 4px; }
+.vlsec .fh { font-size: 12.5px; color: var(--muted); margin: 0 0 10px; }
+.vlrow { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .layout { display: grid; grid-template-columns: 400px 1fr; gap: 22px; max-width: 1200px; margin: 22px auto; padding: 0 24px; align-items: start; }
 .panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px; }
 .input { position: sticky; top: 88px; }
@@ -271,6 +275,17 @@ input:focus, select:focus, textarea:focus, button:focus-visible { outline: 2px s
       <div style="margin-top:14px;display:flex;gap:10px;align-items:center">
         <button class="primary sm" id="salonSave">Save salon settings</button>
         <button class="ghost" id="salonReset">Reset to defaults</button>
+      </div>
+      <div class="vlsec">
+        <h4>Voice library</h4>
+        <p class="fh" id="vlCount">—</p>
+        <p class="fh">Move your saved responses, salon settings, and technician roster to another device or browser. <b>API keys are never included</b> in the export.</p>
+        <div class="vlrow">
+          <button class="ghost" id="vlExport">⭳ Export voice library</button>
+          <button class="ghost" id="vlImport">⭱ Import</button>
+          <button class="ghost" id="vlClear">Clear saved responses</button>
+        </div>
+        <input type="file" id="vlFile" accept="application/json" class="hidden" />
       </div>
     </div>
     <div class="mf"><span class="muted" id="activeHint"></span><button class="primary sm" id="keysDone">Done</button></div>
@@ -563,7 +578,8 @@ function shortLabelById(id) { const p = (state.config?.providers || []).find((x)
 
 const el = {};
 ["salonName","salonSub","quickSwitch","keysBtn","activeLabel","reviewText","stars","clearStar","optionCount","runWith","runProvider","runModel","runModels","usageBar","techSelect","techFree","platformSelect","contextNote","generateBtn","exampleSelect","resultsHead","typeSelect","techDetected","regenBtn","humanBanner","rosterNote","cards","flagsPanel","flagsList","placeholder","loading","errorBox","keysOverlay","keysClose","keysDone","provList","activeHint","keyLock",
- "sfName","sfCity","sfPrice","sfSignoff","sfTechs","salonSave","salonReset"].forEach((id) => (el[id] = document.getElementById(id)));
+ "sfName","sfCity","sfPrice","sfSignoff","sfTechs","salonSave","salonReset",
+ "vlCount","vlExport","vlImport","vlClear","vlFile"].forEach((id) => (el[id] = document.getElementById(id)));
 
 function config() {
   const providers = redacted(), active = activeProvider(), ap = providers.find((p) => p.id === active);
@@ -744,7 +760,50 @@ function fillSalonForm() {
   el.sfSignoff.value = salon.signoff || "";
   const techs = (Array.isArray(s.technicians) && s.technicians.length ? s.technicians : BRAND_DEFAULT.technicians.map((t) => t.name));
   el.sfTechs.value = techs.join("\n");
+  const n = (s.savedExemplars || []).length;
+  el.vlCount.textContent = n ? `${n} saved response${n === 1 ? "" : "s"} in this browser (plus ${BRAND_DEFAULT.exemplars.length} built-in exemplars).` : `No saved responses yet — click “Save as exemplar” on a response you like.`;
 }
+
+/* ---- voice library export / import ---- */
+function download(name, text, type) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([text], { type }));
+  a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+function exportLibrary() {
+  const s = store();
+  const data = { _type: "frenchies-voice-library", version: 1, exportedAt: new Date().toISOString(), salon: s.salon || null, technicians: s.technicians || null, savedExemplars: s.savedExemplars || [] };
+  download(`frenchies-voice-library-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(data, null, 2), "application/json");
+  toast("Voice library exported");
+}
+el.vlExport.addEventListener("click", exportLibrary);
+el.vlImport.addEventListener("click", () => el.vlFile.click());
+el.vlFile.addEventListener("change", () => {
+  const file = el.vlFile.files[0]; el.vlFile.value = ""; if (!file) return;
+  const r = new FileReader();
+  r.onload = () => {
+    let data; try { data = JSON.parse(r.result); } catch { return toast("⚠ Not a valid library file."); }
+    if (!data || data._type !== "frenchies-voice-library" || !Array.isArray(data.savedExemplars)) return toast("⚠ That's not a Frenchies voice library.");
+    if (!confirm(`Import ${data.savedExemplars.length} saved response(s)${data.salon ? " + salon settings" : ""}? Saved responses merge with what you have; API keys are untouched.`)) return;
+    const s = store();
+    const existing = new Set(s.savedExemplars || []);
+    let added = 0;
+    for (const ex of data.savedExemplars) { if (typeof ex === "string" && !existing.has(ex)) { existing.add(ex); added++; } }
+    s.savedExemplars = [...existing];
+    if (data.salon && typeof data.salon === "object") s.salon = data.salon;
+    if (Array.isArray(data.technicians) && data.technicians.length) s.technicians = data.technicians;
+    saveStore(s); init(); fillSalonForm();
+    toast(`Imported — ${added} new response${added === 1 ? "" : "s"} added.`);
+  };
+  r.readAsText(file);
+});
+el.vlClear.addEventListener("click", () => {
+  const s = store(); const n = (s.savedExemplars || []).length;
+  if (!n) return toast("No saved responses to clear.");
+  if (!confirm(`Delete all ${n} saved response(s) from this browser? Built-in exemplars and your salon settings stay.`)) return;
+  s.savedExemplars = []; saveStore(s); fillSalonForm(); toast("Saved responses cleared.");
+});
 el.salonSave.addEventListener("click", () => {
   const s = store();
   s.salon = Object.assign({}, s.salon || {}, { name: el.sfName.value.trim() || BRAND_DEFAULT.salon.name, city: el.sfCity.value.trim(), price_point_usd: Number(el.sfPrice.value) || BRAND_DEFAULT.salon.price_point_usd, signoff: el.sfSignoff.value.trim() });
