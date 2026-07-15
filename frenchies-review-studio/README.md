@@ -10,6 +10,11 @@ interchangeable "Thank you for your feedback!" reply. This one offers a real
 *choice* between different strategic approaches for each review, in a voice that
 comes from **editable config files**, not a model default.
 
+> 📖 **Manuals:** [`docs/OWNER-GUIDE.md`](./docs/OWNER-GUIDE.md) — plain-language
+> setup + how to get the most business value out of it (for a salon owner).
+> [`docs/INSTALL-AND-USE.md`](./docs/INSTALL-AND-USE.md) — the full technical
+> install / configure / operate / troubleshoot guide.
+
 ---
 
 ## What makes it different (by design)
