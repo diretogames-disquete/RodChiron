@@ -78,6 +78,18 @@
       <input id="contextNote" type="text" placeholder="e.g. regular client · resolved offline · first visit" />
     </div>
 
+    <div class="runwith hidden" id="runWith">
+      <div class="field">
+        <label for="runProvider">Run this with</label>
+        <select id="runProvider"></select>
+      </div>
+      <div class="field">
+        <label for="runModel">Model</label>
+        <input id="runModel" type="text" list="runModels" placeholder="model id" />
+        <datalist id="runModels"></datalist>
+      </div>
+    </div>
+
     <button id="generateBtn" class="primary">Generate responses</button>
     <p class="hint">Nothing is posted automatically. You always pick and can edit before using anything.</p>
   </section>
@@ -96,6 +108,7 @@
 
     <div id="humanBanner" class="banner hidden"></div>
     <div id="rosterNote" class="rosterNote hidden"></div>
+    <div id="usageBar" class="usagebar hidden"></div>
 
     <div id="cards" class="cards"></div>
 

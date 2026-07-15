@@ -19,6 +19,7 @@ import {
   getProvider,
 } from "./lib/providers.js";
 import { setKey, removeKey, setActive } from "./lib/secrets.js";
+import { estimateCost } from "./lib/pricing.js";
 import { normalizeResult } from "./lib/schema.js";
 
 // Load .env if present (Node 20.12+/22 built-in; no dependency).
@@ -177,7 +178,8 @@ async function handleGenerate(req, res) {
     today: new Date().toISOString().slice(0, 10),
   });
 
-  const result = await callProvider(provider, { system, user, maxTokens: 3000 });
+  const model = typeof input.model === "string" && input.model.trim() ? input.model.trim() : undefined;
+  const result = await callProvider(provider, { system, user, maxTokens: 3000, model });
   if (!result.ok) {
     return sendJson(res, 502, { error: result.error, retryable: true, provider });
   }
@@ -193,7 +195,12 @@ async function handleGenerate(req, res) {
 
   sendJson(res, 200, {
     result: normalizeResult(parsed.data),
-    meta: { provider, model: result.model, usage: result.usage || null },
+    meta: {
+      provider,
+      model: result.model,
+      usage: result.usage || null,
+      cost: estimateCost(result.model, result.usage),
+    },
   });
 }
 

@@ -134,11 +134,31 @@ export function parseModelJson(text) {
   }
 }
 
+// ---------- usage normalization ----------
+const num = (x) => (Number.isFinite(x) ? x : 0);
+function normUsage(u, kind) {
+  if (!u || typeof u !== "object") return null;
+  if (kind === "openai") {
+    const input = num(u.prompt_tokens), output = num(u.completion_tokens);
+    return { input, output, total: num(u.total_tokens) || input + output };
+  }
+  if (kind === "google") {
+    const input = num(u.promptTokenCount), output = num(u.candidatesTokenCount);
+    return { input, output, total: num(u.totalTokenCount) || input + output };
+  }
+  // anthropic — count cached tokens toward input so the readout reflects real spend
+  const input = num(u.input_tokens) + num(u.cache_read_input_tokens) + num(u.cache_creation_input_tokens);
+  const output = num(u.output_tokens);
+  return { input, output, total: input + output };
+}
+
 // ---------- dispatch ----------
-export async function callProvider(id, { system, user, maxTokens = 3000, signal } = {}) {
+export async function callProvider(id, { system, user, maxTokens = 3000, signal, model } = {}) {
   const p = getProvider(id);
   if (!p) return { ok: false, status: 0, error: `Unknown provider: ${id}` };
-  const cfg = resolveConfig(id);
+  const base = resolveConfig(id);
+  // Per-request model override (from the "Run this with" picker), else the saved model.
+  const cfg = { ...base, model: (model && String(model).trim()) || base.model };
   if (!cfg.apiKey)
     return { ok: false, status: 0, error: `No API key for ${p.label}. Add one under "API keys".` };
   if (p.needsBaseUrl && !cfg.baseUrl)
@@ -190,7 +210,7 @@ async function callAnthropic(cfg, { system, user, maxTokens, signal }) {
     .filter((b) => b && b.type === "text" && typeof b.text === "string")
     .map((b) => b.text)
     .join("");
-  return { ok: true, status: 200, text, usage: json?.usage || null, model: cfg.model };
+  return { ok: true, status: 200, text, usage: normUsage(json?.usage, "anthropic"), model: cfg.model };
 }
 
 async function callOpenAILike(id, cfg, { system, user, maxTokens, signal }) {
@@ -220,7 +240,7 @@ async function callOpenAILike(id, cfg, { system, user, maxTokens, signal }) {
   if (choice?.finish_reason === "content_filter")
     return { ok: false, status: 200, error: "The provider filtered this request. Review it manually." };
   const text = typeof choice?.message?.content === "string" ? choice.message.content : "";
-  return { ok: true, status: 200, text, usage: json?.usage || null, model: cfg.model };
+  return { ok: true, status: 200, text, usage: normUsage(json?.usage, "openai"), model: cfg.model };
 }
 
 async function callGoogle(cfg, { system, user, maxTokens, signal }) {
@@ -246,7 +266,7 @@ async function callGoogle(cfg, { system, user, maxTokens, signal }) {
   const text = (cand?.content?.parts || [])
     .map((p) => (typeof p.text === "string" ? p.text : ""))
     .join("");
-  return { ok: true, status: 200, text, usage: json?.usageMetadata || null, model: cfg.model };
+  return { ok: true, status: 200, text, usage: normUsage(json?.usageMetadata, "google"), model: cfg.model };
 }
 
 function apiErr(label, status, json, raw) {

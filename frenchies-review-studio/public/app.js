@@ -28,6 +28,11 @@ const el = {
   stars: $("#stars"),
   clearStar: $("#clearStar"),
   optionCount: $("#optionCount"),
+  runWith: $("#runWith"),
+  runProvider: $("#runProvider"),
+  runModel: $("#runModel"),
+  runModels: $("#runModels"),
+  usageBar: $("#usageBar"),
   techSelect: $("#techSelect"),
   techFree: $("#techFree"),
   platformSelect: $("#platformSelect"),
@@ -64,6 +69,18 @@ function toast(msg) {
   el.toast.classList.add("show");
   clearTimeout(el.toast._t);
   el.toast._t = setTimeout(() => el.toast.classList.remove("show"), 2200);
+}
+const fmtN = (n) => (Number(n) || 0).toLocaleString();
+function fmtUSD(n) {
+  const v = Number(n) || 0;
+  if (v === 0) return "$0";
+  if (v < 0.01) return "$" + v.toFixed(5);
+  if (v < 1) return "$" + v.toFixed(4);
+  return "$" + v.toFixed(2);
+}
+function shortLabelById(id) {
+  const p = (state.config?.providers || []).find((x) => x.id === id);
+  return p ? shortLabel(p) : id || "";
 }
 
 // ---- init ----
@@ -155,6 +172,8 @@ function collectInput() {
     platform: el.platformSelect.value,
     context: el.contextNote.value.trim(),
     count: Number(el.optionCount.value) || 3,
+    provider: el.runProvider.value || undefined,
+    model: el.runModel.value.trim() || undefined,
   };
 }
 
@@ -172,6 +191,7 @@ async function generate() {
   el.flagsPanel.classList.add("hidden");
   el.humanBanner.classList.add("hidden");
   el.rosterNote.classList.add("hidden");
+  el.usageBar.classList.add("hidden");
   el.loading.classList.remove("hidden");
   el.generateBtn.disabled = true;
   el.regenBtn.disabled = true;
@@ -190,6 +210,7 @@ async function generate() {
     }
     state.lastResult = data.result;
     render(data.result, input);
+    renderUsage(data.meta);
   } catch (e) {
     showError(`Something went wrong: ${e.message}`);
   } finally {
@@ -336,6 +357,39 @@ function applyProviderState(cfg) {
   } else {
     el.quickSwitch.classList.add("hidden");
   }
+  syncRunPicker(cfg);
+}
+
+// "Run this with" per-request provider + model picker (defaults to active).
+function syncRunPicker(cfg) {
+  const configured = (cfg.providers || []).filter((p) => p.configured);
+  if (!configured.length) {
+    el.runWith.classList.add("hidden");
+    return;
+  }
+  el.runWith.classList.remove("hidden");
+  const prev = el.runProvider.value;
+  el.runProvider.innerHTML = configured.map((p) => `<option value="${p.id}">${esc(shortLabel(p))}</option>`).join("");
+  el.runProvider.value = configured.some((p) => p.id === prev) ? prev : cfg.active;
+  updateRunModel(el.runProvider.value !== prev);
+}
+function updateRunModel(setDefault) {
+  const p = (state.config?.providers || []).find((x) => x.id === el.runProvider.value);
+  if (!p) return;
+  el.runModels.innerHTML = (p.models || []).map((m) => `<option value="${esc(m)}"></option>`).join("");
+  if (setDefault || !el.runModel.value.trim()) el.runModel.value = p.model || p.defaultModel || "";
+}
+function renderUsage(meta) {
+  if (!meta) return el.usageBar.classList.add("hidden");
+  let s = `Generated with <b>${esc(shortLabelById(meta.provider))}</b> · ${esc(meta.model || "")}`;
+  if (meta.usage && (meta.usage.input || meta.usage.output)) {
+    s += ` <span class="sep">·</span> ${fmtN(meta.usage.input)} in / ${fmtN(meta.usage.output)} out tokens`;
+  }
+  if (meta.cost && typeof meta.cost.total === "number") {
+    s += ` <span class="sep">·</span> <span class="cost">~${fmtUSD(meta.cost.total)}</span> <span class="muted">est.</span>`;
+  }
+  el.usageBar.innerHTML = s;
+  el.usageBar.classList.remove("hidden");
 }
 
 function renderProviderList() {
@@ -449,6 +503,7 @@ el.keysClose.addEventListener("click", closeKeys);
 el.keysDone.addEventListener("click", closeKeys);
 el.keysOverlay.addEventListener("click", (e) => { if (e.target === el.keysOverlay) closeKeys(); });
 el.quickSwitch.addEventListener("change", () => setActiveProvider(el.quickSwitch.value));
+el.runProvider.addEventListener("change", () => updateRunModel(true));
 document.addEventListener("keydown", (e) => { if (e.key === "Escape" && el.keysOverlay.classList.contains("show")) closeKeys(); });
 
 el.generateBtn.addEventListener("click", generate);

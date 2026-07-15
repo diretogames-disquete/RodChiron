@@ -39,19 +39,20 @@ const upstream = createServer((req, res) => {
       globalThis.__anthSchema = Boolean(JSON.parse(body || "{}").output_config?.format?.schema);
       globalThis.__lastSystem = JSON.parse(body || "{}").system || "";
       res.writeHead(200, { "content-type": "application/json" });
-      return res.end(JSON.stringify({ content: [{ type: "text", text: "```json\n" + json + "\n```" }], stop_reason: "end_turn", usage: {} }));
+      return res.end(JSON.stringify({ content: [{ type: "text", text: "```json\n" + json + "\n```" }], stop_reason: "end_turn", usage: { input_tokens: 1200, output_tokens: 300 } }));
     }
     if (url.includes("/chat/completions")) {
       hits.push("openai");
       globalThis.__oaiAuth = req.headers["authorization"] === "Bearer sk-openaiTESTKEY";
+      globalThis.__oaiModel = JSON.parse(body || "{}").model;
       res.writeHead(200, { "content-type": "application/json" });
-      return res.end(JSON.stringify({ choices: [{ message: { content: json }, finish_reason: "stop" }], usage: {} }));
+      return res.end(JSON.stringify({ choices: [{ message: { content: json }, finish_reason: "stop" }], usage: { prompt_tokens: 1000, completion_tokens: 250, total_tokens: 1250 } }));
     }
     if (url.includes(":generateContent")) {
       hits.push("google");
       globalThis.__gKey = url.includes("key=AIzaTESTKEY");
       res.writeHead(200, { "content-type": "application/json" });
-      return res.end(JSON.stringify({ candidates: [{ content: { parts: [{ text: json }] }, finishReason: "STOP" }] }));
+      return res.end(JSON.stringify({ candidates: [{ content: { parts: [{ text: json }] }, finishReason: "STOP" }], usageMetadata: { promptTokenCount: 900, candidatesTokenCount: 200, totalTokenCount: 1100 } }));
     }
     res.writeHead(404); res.end("nope");
   });
@@ -93,6 +94,8 @@ async function main() {
     let g = await post("/api/generate", { review: "Rheanna was thorough, my best ever!", rating: 5, technician: "Rheanna", count: 3 });
     ok("generate: anthropic returns 3 options", g.j.result?.options?.length === 3);
     ok("generate: meta.provider = anthropic", g.j.meta?.provider === "anthropic");
+    ok("meta.usage normalized (anthropic)", g.j.meta?.usage?.input === 1200 && g.j.meta?.usage?.output === 300);
+    ok("meta.cost estimated (sonnet-5)", g.j.meta?.cost && Math.abs(g.j.meta.cost.total - ((1200 / 1e6) * 3 + (300 / 1e6) * 15)) < 1e-9);
     ok("upstream: anthropic got correct headers", globalThis.__anthHeaders === true);
     ok("upstream: anthropic got structured schema", globalThis.__anthSchema === true);
     ok("system prompt: has salon facts + exemplar", /Frenchies Modern Nail Care/.test(globalThis.__lastSystem) && /My best ever/.test(globalThis.__lastSystem));
@@ -121,9 +124,15 @@ async function main() {
     ok("generate: google key in query string", globalThis.__gKey === true);
     ok("generate: google returns options", g.j.result?.options?.length === 3);
 
-    // per-request provider override
-    g = await post("/api/generate", { review: "override test", rating: 5, count: 2, provider: "openai" });
+    ok("meta.usage normalized (google)", g.j.meta?.usage?.input === 900 && g.j.meta?.usage?.output === 200);
+    ok("meta.cost estimated (gemini-flash)", g.j.meta?.cost && g.j.meta.cost.total > 0);
+
+    // per-request provider + model override
+    g = await post("/api/generate", { review: "override test", rating: 5, count: 2, provider: "openai", model: "gpt-4o" });
     ok("generate: per-request provider override", g.j.meta?.provider === "openai");
+    ok("generate: per-request model override reaches provider", globalThis.__oaiModel === "gpt-4o");
+    ok("generate: meta.model reflects override", g.j.meta?.model === "gpt-4o");
+    ok("generate: cost uses overridden model price", g.j.meta?.cost && Math.abs(g.j.meta.cost.total - ((1000 / 1e6) * 2.5 + (250 / 1e6) * 10)) < 1e-9);
 
     // cannot activate an unconfigured provider
     r = await post("/api/providers/active", { provider: "openai_compatible" });

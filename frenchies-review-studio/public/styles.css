@@ -103,6 +103,15 @@ input:focus, select:focus, textarea:focus, button:focus-visible { outline: 2px s
 .stars .clearstar { font-size: 14px; color: var(--muted); margin-left: 6px; }
 .stars .clearstar:hover { color: var(--crit); }
 
+.runwith { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; padding-top: 15px; border-top: 1px dashed var(--line-strong); }
+.runwith .field { margin-top: 0; }
+
+.usagebar { font-size: 12.5px; color: var(--ink-2); background: var(--surface-2); border: 1px solid var(--line); border-radius: 9px; padding: 9px 13px; margin-bottom: 14px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.usagebar b { color: var(--accent); }
+.usagebar .sep { color: var(--line-strong); }
+.usagebar .muted { color: var(--muted); }
+.usagebar .cost { font-weight: 650; color: var(--ink); }
+
 .primary { width: 100%; margin-top: 16px; background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 10px; padding: 12px; font-size: 15px; font-weight: 650; }
 .primary:hover { background: #a95a3c; }
 .primary:disabled { opacity: .6; cursor: default; }

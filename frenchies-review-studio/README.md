@@ -76,7 +76,10 @@ model, just type its id.
 1. Paste the review and pick a star rating (1–5).
 2. Optionally set the technician, platform, context notes ("regular client,"
    "resolved offline"), and how many options you want (2–4).
-3. **Generate.** You get:
+3. **Run this with** — pick the provider and model for *this* generation (defaults
+   to your active provider). Overriding the model here doesn't change your saved
+   default; it just runs this one on, say, a cheaper model.
+4. **Generate.** You get:
    - the **detected review type** (editable),
    - the technician detected,
    - a **"Needs human review"** banner when the case is sensitive,
@@ -84,9 +87,20 @@ model, just type its id.
      character count, **Copy**, and **Save as exemplar**,
    - an **operational flags** panel (for you — not part of the public reply),
    - a **roster note** if the review named a technician not on file.
-4. **Regenerate** re-rolls fresh angles. Edit any response inline before copying.
+5. **Regenerate** re-rolls fresh angles. Edit any response inline before copying.
+
+A small bar above the results shows which provider + model actually ran, the
+tokens used, and an **estimated cost** — so you can compare what each provider
+costs you per review.
 
 Nothing is ever posted automatically.
+
+### Cost estimates
+
+The cost figure is an estimate from `pricing.json` in the project root (USD per
+1,000,000 tokens, input/output). **Edit it to match your real rates**, and add any
+model id you use (e.g. an OpenRouter or DeepSeek model) to get a readout for it. A
+model with no price listed simply shows token counts and no cost.
 
 ### The learning loop
 

@@ -1,0 +1,13 @@
+{
+  "_comment": "USD per 1,000,000 tokens (input / output). ESTIMATES ONLY — edit these to match your actual provider rates. Add any model id here (e.g. an OpenRouter or DeepSeek model) to get a cost readout for it. Unknown models simply show token counts without a cost.",
+  "claude-sonnet-5": { "input": 3, "output": 15 },
+  "claude-opus-4-8": { "input": 5, "output": 25 },
+  "claude-haiku-4-5": { "input": 1, "output": 5 },
+  "gpt-4o-mini": { "input": 0.15, "output": 0.6 },
+  "gpt-4o": { "input": 2.5, "output": 10 },
+  "gpt-4.1-mini": { "input": 0.4, "output": 1.6 },
+  "gpt-4.1": { "input": 2, "output": 8 },
+  "gemini-1.5-flash": { "input": 0.075, "output": 0.3 },
+  "gemini-1.5-pro": { "input": 1.25, "output": 5 },
+  "gemini-2.0-flash": { "input": 0.1, "output": 0.4 }
+}
