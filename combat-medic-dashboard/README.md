@@ -8,10 +8,12 @@ live to each scenario's injuries and interventions, and performance is scored
 against JTS Clinical Practice Guideline benchmarks.
 
 - **Variant A — TACMED-19:** grounded, near-term rugged tactical. Dense
-  instrumentation; amber/red/green semantics; feels like issued kit.
+  instrumentation; amber/red/green semantics; feels like issued kit. Includes the
+  rotating **3D holographic anatomical injury model** (tint switchable in the
+  controls), falling back to a 2D body map if WebGL is unavailable.
 - **Variant B — AEGIS Predictive:** speculative AI-augmented hologram. Translucent
-  cyan glass, predictive vitals, auto-populated 9-line, P(survival) ring, and a
-  rotating 3D anatomical injury model.
+  cyan glass, predictive vitals, auto-populated 9-line, P(survival) ring, and the
+  same rotating 3D anatomical injury model.
 
 A floating control panel (top-right) lets you pick a scenario, play/scrub the
 timeline, switch **FOCUS** (both variants / TACMED only / AEGIS only), retint the
@@ -28,9 +30,15 @@ auto-scrolls.
 `standalone.html` is a **single self-contained file** — every library, the 3D
 model, and all scenario data are embedded. **Double-click it** and it runs in your
 browser with **no install, no server, and no internet required** (an internet
-connection only improves the web-font; everything else is offline).
+connection only improves the web-font; everything else, including the 3D
+holograms, is offline).
 
 This is the easiest way to view or demo the dashboard.
+
+> `standalone.html` is **generated** from the multi-file source below — don't
+> hand-edit it. Change the `.jsx` / `.js` files, then rebuild with
+> `node build-standalone.mjs` (it inlines the pinned libraries and every module
+> into a fresh `standalone.html`).
 
 ### Option 2 — the editable multi-file source (`index.html`)
 
@@ -64,6 +72,7 @@ components); use `standalone.html` when you just want it to run.
 | `index.html` | Editable entry point; loads the modules below (must be served). |
 | `serve.mjs` | Zero-dependency Node static server for `index.html`. |
 | `serve.command` / `serve.bat` | Double-click launchers for macOS / Windows. |
+| `build-standalone.mjs` | Regenerates `standalone.html` from the sources below. |
 | `scenarios.jsx` | The 50-scenario MARCH·PAWS casualty library + site/anatomy registry. |
 | `sim.jsx` | Parameterized simulation engine — `setScenario(i)`, `vitalsAt(t)`. |
 | `body3d.jsx` | GLB anatomical hologram (Three.js) with injury/intervention markers; falls back to a 2D SVG body map if WebGL or the model is unavailable. |

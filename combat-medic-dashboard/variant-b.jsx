@@ -111,8 +111,9 @@ function BTrendCard({ label, unit, value, history, keyName, color, range, warn, 
   const min = Math.min(...allVals) * 0.92;
   const max = Math.max(...allVals) * 1.08;
   const range_ = Math.max(1, max - min);
-  const hist = history.map((h, i) => ({ x: (i / (history.length - 1 + (projected?.length || 0))) * 100, y: 40 - ((h[keyName] - min) / range_) * 40 }));
-  const proj = (projected || []).map((v, i) => ({ x: ((history.length - 1 + i + 1) / (history.length - 1 + (projected?.length || 0))) * 100, y: 40 - ((v - min) / range_) * 40 }));
+  const span = (history.length - 1 + (projected?.length || 0)) || 1; // avoid 0/0 on a single-point history
+  const hist = history.map((h, i) => ({ x: (i / span) * 100, y: 40 - ((h[keyName] - min) / range_) * 40 }));
+  const proj = (projected || []).map((v, i) => ({ x: ((history.length - 1 + i + 1) / span) * 100, y: 40 - ((v - min) / range_) * 40 }));
   const histPath = hist.map((p, i) => `${i ? 'L' : 'M'}${p.x},${p.y}`).join(' ');
   const projPath = proj.length ? `M${hist[hist.length-1].x},${hist[hist.length-1].y} ` + proj.map(p => `L${p.x},${p.y}`).join(' ') : '';
 

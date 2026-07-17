@@ -22,6 +22,17 @@ the sidebar.
 
 ---
 
+## Also in this repository
+
+Separate, self-contained projects that live alongside the 1SG decks:
+
+| Project | What it is |
+|---|---|
+| **[`combat-medic-dashboard/`](./combat-medic-dashboard/)** | A **TCCC MARCH·PAWS combat-medic HUD** concept — two holographic display variants (rugged *TACMED-19* and predictive *AEGIS*), a 50-scenario casualty library, a live vitals simulation, a rotating 3D anatomical injury hologram, and JTS-benchmarked performance scoring. Double-click `standalone.html` to run it offline. |
+| **[`frenchies-review-studio/`](./frenchies-review-studio/)** | A brand-voice **review-response studio** — paste a client review and get ready-to-post reply options in a business's specific voice, with multi-provider (Anthropic / OpenAI / Gemini / OpenRouter) support. Runs as a small local server or a single `standalone.html`. |
+
+---
+
 ## Quick start
 
 1. Open `index.html` (company) or `group.html` (group) in a browser
