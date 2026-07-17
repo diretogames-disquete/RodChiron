@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>Combat Medic Dashboard — MARCH PAWS</title>
+<template id="__bundler_thumbnail" data-bg-color="#0a0f12">
+  <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+    <rect width="1200" height="800" fill="#0a0f12"/>
+    <g stroke="#6ec6d9" stroke-width="3" fill="none" opacity="0.85">
+      <circle cx="600" cy="230" r="60"/>
+      <path d="M500 320 L700 320 L720 520 L680 640 L520 640 L480 520 Z"/>
+      <path d="M500 320 L420 370 L400 560"/>
+      <path d="M700 320 L780 370 L800 560"/>
+    </g>
+    <g fill="#ff5a6e">
+      <circle cx="520" cy="520" r="22" opacity="0.3"/>
+      <circle cx="520" cy="520" r="10"/>
+      <circle cx="670" cy="420" r="22" opacity="0.3"/>
+      <circle cx="670" cy="420" r="10"/>
+    </g>
+    <g fill="#8df0ff" font-family="monospace" font-size="26" letter-spacing="6">
+      <text x="600" y="740" text-anchor="middle">MARCH · PAWS</text>
+    </g>
+  </svg>
+</template>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@200;300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+  html, body { margin: 0; padding: 0; background: #f0eee9; }
+  body { font-family: Inter, -apple-system, system-ui, sans-serif; color: rgba(30,24,18,0.92); }
+  * { box-sizing: border-box; }
+  button { font-family: inherit; }
+  a { color: #b86b3a; } a:hover { color: #8a4a22; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(110,130,150,0.35); border-radius: 5px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(110,130,150,0.55); }
+
+  .page { max-width: 1320px; margin: 0 auto; padding: 48px 28px 120px; }
+  .kicker { font-size: 11px; letter-spacing: 3px; color: rgba(60,50,40,0.55); font-weight: 600; margin-bottom: 6px; }
+  .h1 { font-size: 34px; font-weight: 600; letter-spacing: -0.6px; margin: 0 0 8px; }
+  .lede { font-size: 15px; color: rgba(60,50,40,0.7); max-width: 780px; line-height: 1.55; margin: 0; }
+
+  .section-head { margin: 64px 0 20px; display: flex; justify-content: space-between; align-items: baseline; gap: 24px; flex-wrap: wrap; }
+  .section-title { font-size: 22px; font-weight: 600; letter-spacing: -0.3px; margin: 0 0 4px; }
+  .section-sub { font-size: 13px; color: rgba(60,50,40,0.6); margin: 0; max-width: 680px; line-height: 1.5; }
+
+  .hud-row { display: grid; grid-template-columns: 1fr 340px; gap: 24px; align-items: start; }
+  @media (max-width: 1100px) { .hud-row { grid-template-columns: 1fr; } }
+  .hud-row.solo { grid-template-columns: 1fr; }
+
+  .hud-wrap { position: relative; width: 100%; aspect-ratio: 960 / 640;
+              border-radius: 3px; overflow: hidden;
+              box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 8px 32px rgba(0,0,0,0.08); }
+  .hud-wrap .hud-label { position: absolute; bottom: calc(100% + 8px); left: 0;
+                         font-size: 11px; color: rgba(60,50,40,0.65); font-weight: 500; letter-spacing: 0.3px; }
+  .hud-scale { position: absolute; top: 0; left: 0; width: 960px; height: 640px; transform-origin: 0 0; }
+
+  .annotation-card { background: #fafaf6; border-radius: 3px; padding: 22px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+
+  .data-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  @media (max-width: 1100px) { .data-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 620px) { .data-grid { grid-template-columns: 1fr; } }
+  .data-card { background: #0b0f12; color: #d7e3ee; padding: 22px; border-radius: 3px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+
+  /* Floating controls — two stylish rows */
+  .controls { position: fixed; top: 14px; right: 14px; z-index: 50;
+              background: rgba(11,15,18,0.94); color: #d7e3ee;
+              border: 1px solid rgba(141,240,255,0.25);
+              border-radius: 5px; padding: 12px 14px;
+              display: flex; flex-direction: column; gap: 10px;
+              font-size: 11px; letter-spacing: 0.5px;
+              backdrop-filter: blur(10px);
+              box-shadow: 0 6px 24px rgba(0,0,0,0.35); }
+  .controls .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .controls .lbl { font-size: 8px; letter-spacing: 1.6px; color: #7f98b3; }
+  .controls button { background: transparent; color: #d7e3ee; border: 1px solid rgba(141,240,255,0.3);
+                     padding: 4px 10px; font-size: 11px; cursor: pointer; letter-spacing: 0.8px; border-radius: 3px; }
+  .controls button:hover { background: rgba(141,240,255,0.12); }
+  .controls button.on { background: rgba(141,240,255,0.18); border-color: #8df0ff; color: #8df0ff; }
+  .controls .cue { color: #8df0ff; font-family: "JetBrains Mono", monospace; font-variant-numeric: tabular-nums; }
+  .controls input[type="range"] { accent-color: #8df0ff; width: 150px; }
+  .controls select { background: rgba(11,15,18,0.9); color: #8df0ff; border: 1px solid rgba(141,240,255,0.3);
+                     padding: 4px 6px; font-size: 11px; max-width: 220px; font-family: inherit; border-radius: 3px; }
+  .swatch { width: 18px; height: 18px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.15);
+            cursor: pointer; padding: 0; flex-shrink: 0; transition: transform 0.15s; }
+  .swatch:hover { transform: scale(1.2); }
+  .swatch.on { border-color: #fff; box-shadow: 0 0 8px currentColor; transform: scale(1.15); }
+
+  /* Focus-mode narration — big editable teleprompter */
+  .narration { margin-top: 24px; background: #0b0f12; color: #d7e3ee;
+               border: 1px solid rgba(141,240,255,0.25); border-radius: 3px;
+               padding: 30px 38px; font-size: 22px; line-height: 1.7;
+               height: 360px; overflow-y: auto; outline: none;
+               box-shadow: 0 8px 32px rgba(0,0,0,0.15); }
+  .narration:focus { border-color: #8df0ff; }
+  .narration h3 { color: #8df0ff; font-weight: 400; letter-spacing: 1px; font-size: 26px; margin: 0 0 14px; }
+  .narration p { margin: 0 0 16px; }
+  .narration b { color: #ffd27a; font-family: "JetBrains Mono", monospace; font-weight: 600; }
+  .nar-dim { color: #7f98b3; font-size: 18px; }
+  .nar-hint { font-size: 11px; color: rgba(60,50,40,0.55); letter-spacing: 0.5px; margin-top: 8px; }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/three@0.128.0/build/three.min.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js" crossorigin="anonymous"></script>
+<script src="body-model-data.js"></script>
+<script src="tacaudio.js"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="scenarios.jsx"></script>
+<script type="text/babel" src="sim.jsx"></script>
+<script type="text/babel" src="body3d.jsx"></script>
+<script type="text/babel" src="variant-a.jsx"></script>
+<script type="text/babel" src="variant-b.jsx"></script>
+<script type="text/babel" src="tweaks.jsx"></script>
+
+<script type="text/babel">
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "phase": "TFC",
+  "severity": "CRITICAL",
+  "forcedStep": "AUTO",
+  "scheme": "NIGHT",
+  "showPerf": true,
+  "playing": true,
+  "simT": 30,
+  "scenario": 0,
+  "holo": "CYAN",
+  "focus": "BOTH",
+  "scrollSpeed": 25,
+  "audio": false
+}/*EDITMODE-END*/;
+const TWEAK_FALLBACK = { phase: 'TFC', severity: 'CRITICAL', forcedStep: 'AUTO', scheme: 'NIGHT', showPerf: true, playing: true, simT: 30, scenario: 0, holo: 'CYAN', focus: 'BOTH', scrollSpeed: 25, audio: false };
+const INIT_TWEAKS = { ...TWEAK_FALLBACK, ...TWEAK_DEFAULTS };
+INIT_TWEAKS.simT = Number(INIT_TWEAKS.simT) || 0;
+INIT_TWEAKS.scenario = Math.max(0, Math.min(SCENARIOS.length - 1, Number(INIT_TWEAKS.scenario) || 0));
+INIT_TWEAKS.audio = false; // audio always starts muted (browser gesture policy)
+
+const HOLO_SWATCH = { CYAN: '#8df0ff', GREEN: '#6df0a3', AMBER: '#ffd27a', VIOLET: '#c8a8ff' };
+
+// Fit-to-container scaler for the 960x640 HUD (direct DOM, no state)
+function HUDFrame({ children, label }) {
+  const wrapRef = React.useRef(null);
+  const scaleRef = React.useRef(null);
+  React.useLayoutEffect(() => {
+    const wrap = wrapRef.current, inner = scaleRef.current;
+    if (!wrap || !inner) return;
+    const apply = () => { if (wrap.clientWidth) inner.style.transform = `scale(${wrap.clientWidth / 960})`; };
+    apply();
+    const ro = new ResizeObserver(apply);
+    ro.observe(wrap);
+    return () => ro.disconnect();
+  }, []);
+  return (
+    <div className="hud-wrap" ref={wrapRef}>
+      {label && <div className="hud-label">{label}</div>}
+      <div className="hud-scale" ref={scaleRef}>{children}</div>
+    </div>
+  );
+}
+
+// ─── Narration — editable teleprompter, auto-generated per scenario ─────
+const NAR_RATIONALE = {
+  hemostasis: 'Direct hemorrhage control — the single largest preventable cause of battlefield death.',
+  binder: 'Closes the pelvic ring to tamponade venous bleeding.',
+  airway: 'Secures oxygenation before respiratory decline.',
+  seal: 'Occludes the chest-wall defect to prevent tension physiology.',
+  needle: 'Decompresses the pleural space — watch for re-tension.',
+  o2: 'High-flow oxygen ahead of possible airway edema.',
+  io: 'Vascular access for resuscitation and analgesia.',
+  txa: 'Antifibrinolytic — must run inside the 3-hour window.',
+  blood: 'Whole blood replaces what was lost; crystalloid only dilutes it.',
+  fluids: 'Calculated burn resuscitation — avoid over-infusion.',
+  hpmk: 'Hypothermia is one corner of the lethal triad.',
+  neuro: 'Serial neuro exams track an evolving TBI.',
+  pain: 'Analgesia chosen to protect pressure and airway.',
+  abx: 'Early antibiotics cut wound-infection mortality.',
+  dress: 'Clean, documented wounds for the receiving surgical team.',
+  splint: 'Stabilizes the fracture — less bleeding, less pain.',
+};
+function narrationHTML(scen) {
+  const steps = scen.script.map(e =>
+    `<p><b>T+${e.t}s · ${e.step.replace('2','')}</b> — ${e.action}. <span class="nar-dim">${NAR_RATIONALE[e.effect] || ''}</span></p>`
+  ).join('');
+  return `<h3>${scen.casualty.name} · ${scen.mech}</h3>` +
+    `<p>${scen.casualty.unit} · ${scen.casualty.bloodType} · ${scen.casualty.weightKg} kg · allergies ${scen.casualty.allergies}. ` +
+    `Point-of-injury care under TCCC. The protocol below plays out over ~${Math.max(1, Math.round(scen.duration / 60))} minutes. This narration is editable — click and type.</p>` +
+    steps +
+    `<p><b>EXFIL</b> — casualty packaged, 9-line transmitted, DUSTOFF inbound. <span class="nar-dim">Performance scored live against JTS benchmarks.</span></p>`;
+}
+
+function NarrationPanel({ scenIdx, speed }) {
+  const boxRef = React.useRef(null);
+  React.useEffect(() => {
+    if (!boxRef.current) return;
+    boxRef.current.innerHTML = narrationHTML(SCENARIOS[scenIdx]);
+    boxRef.current.scrollTop = 0;
+  }, [scenIdx]);
+  React.useEffect(() => {
+    let raf, last = performance.now();
+    const tick = (now) => {
+      raf = requestAnimationFrame(tick);
+      const dt = (now - last) / 1000; last = now;
+      const el = boxRef.current;
+      if (!el || !speed || document.activeElement === el) return; // pause while editing
+      el.scrollTop += speed * dt;
+      if (speed > 0 && el.scrollTop >= el.scrollHeight - el.clientHeight - 1) el.scrollTop = 0;
+      if (speed < 0 && el.scrollTop <= 0) el.scrollTop = el.scrollHeight;
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [speed]);
+  return (
+    <div>
+      <div className="narration" ref={boxRef} contentEditable suppressContentEditableWarning spellCheck={false}></div>
+      <div className="nar-hint">Editable narration — click into the panel to type (auto-scroll pauses while editing). Roll speed &amp; direction in the top-right controls.</div>
+    </div>
+  );
+}
+
+function Controls({ tweaks, setTweaks }) {
+  const set = (k, v) => setTweaks(prev => ({ ...prev, [k]: v }));
+  const mm = Math.floor(tweaks.simT / 60).toString().padStart(2,'0');
+  const ss = Math.floor(tweaks.simT % 60).toString().padStart(2,'0');
+  const dur = SCENARIOS[tweaks.scenario].duration;
+  const focused = tweaks.focus !== 'BOTH';
+  return (
+    <div className="controls">
+      <div className="row">
+        <select value={tweaks.scenario} onChange={e => set('scenario', +e.target.value)}>
+          {SCENARIOS.map((s, i) => <option key={i} value={i}>{s.label}</option>)}
+        </select>
+        <button onClick={() => set('playing', !tweaks.playing)}>{tweaks.playing ? '⏸' : '▶'}</button>
+        <button onClick={() => { set('simT', 0); set('playing', true); }}>↺</button>
+        <input type="range" min="0" max={dur} step="1" value={tweaks.simT}
+               onChange={e => { set('simT', +e.target.value); set('playing', false); }}/>
+        <span className="cue">T+{mm}:{ss}</span>
+      </div>
+      <div className="row">
+        <span className="lbl">FOCUS</span>
+        {['BOTH','TACMED','AEGIS'].map(f => (
+          <button key={f} className={tweaks.focus === f ? 'on' : ''} onClick={() => set('focus', f)}>{f}</button>
+        ))}
+        <span className="lbl" style={{ marginLeft: 8 }}>HOLO</span>
+        {Object.entries(HOLO_SWATCH).map(([name, c]) => (
+          <button key={name} title={name} className={'swatch' + (tweaks.holo === name ? ' on' : '')}
+                  style={{ background: c, color: c }} onClick={() => set('holo', name)}></button>
+        ))}
+        <button style={{ marginLeft: 8 }} className={tweaks.showPerf ? 'on' : ''} onClick={() => set('showPerf', !tweaks.showPerf)}>PERF</button>
+        <button className={tweaks.audio ? 'on' : ''}
+                onClick={() => { const next = !tweaks.audio; if (next && window.TacAudio) TacAudio.start(); if (!next && window.TacAudio) TacAudio.stop(); set('audio', next); }}>
+          {tweaks.audio ? '🔊 AUDIO' : '🔇 AUDIO'}
+        </button>
+      </div>
+      {focused && (
+        <div className="row">
+          <span className="lbl">ROLL</span>
+          <input type="range" min="-90" max="90" step="5" value={tweaks.scrollSpeed}
+                 onChange={e => set('scrollSpeed', +e.target.value)}/>
+          <span className="cue">{tweaks.scrollSpeed > 0 ? '▼' : tweaks.scrollSpeed < 0 ? '▲' : '⏸'} {Math.abs(tweaks.scrollSpeed)}px/s</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function App() {
+  const [tweaks, setTweaks] = React.useState(INIT_TWEAKS);
+
+  React.useEffect(() => {
+    setScenario(tweaks.scenario);
+    setTweaks(prev => ({ ...prev, simT: 0, playing: true }));
+  }, [tweaks.scenario]);
+
+  React.useEffect(() => {
+    if (!tweaks.playing) return;
+    let raf;
+    let last = performance.now();
+    const tick = (now) => {
+      const dt = (now - last) / 1000;
+      last = now;
+      setTweaks(prev => {
+        if (!prev.playing) return prev;
+        let next = prev.simT + dt * 1.6;
+        if (next > SCENARIOS[prev.scenario].duration) next = 20;
+        return { ...prev, simT: next };
+      });
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [tweaks.playing]);
+
+  const t = Math.floor(tweaks.simT);
+  const forced = tweaks.forcedStep === 'AUTO' ? null : tweaks.forcedStep;
+  const vit = vitalsAt(t);
+  const alertOn = vit.spo2 < 90 || vit.sbp < 85;
+
+  // Audio follows the casualty
+  React.useEffect(() => { if (window.TacAudio) TacAudio.hr = vit.hr; });
+  React.useEffect(() => {
+    if (!tweaks.audio || !alertOn || !window.TacAudio) return;
+    TacAudio.alert();
+    const iv = setInterval(() => TacAudio.alert(), 3200);
+    return () => clearInterval(iv);
+  }, [alertOn, tweaks.audio]);
+  React.useEffect(() => () => { if (window.TacAudio) TacAudio.stop(); }, []);
+
+  const focused = tweaks.focus !== 'BOTH';
+  const showA = tweaks.focus !== 'AEGIS';
+  const showB = tweaks.focus !== 'TACMED';
+
+  return (
+    <>
+      <Controls tweaks={tweaks} setTweaks={setTweaks}/>
+      <div className="page">
+        <div className="kicker">TCCC DASHBOARD CONCEPT · MARCH·PAWS</div>
+        <h1 className="h1">Combat Medic Visual Operation</h1>
+        {!focused && (
+          <p className="lede">
+            Two HUD directions for a holographic combat-medic display supporting the full
+            MARCH·PAWS protocol. A library of <b>50 scripted casualty scenarios</b> — GSW, IED,
+            blast, burn, crush, MVC — drives both variants: vitals respond to each scenario's
+            injuries and interventions, and performance is scored live against JTS Clinical
+            Practice Guideline benchmarks. Pick a scenario from the top-right controls.
+          </p>
+        )}
+
+        {showA && (
+          <section id="variant-a">
+            <div className="section-head">
+              <div>
+                <h2 className="section-title">Variant A — TACMED-19</h2>
+                {!focused && (
+                  <p className="section-sub">
+                    Grounded, near-term rugged tactical. Dense instrumentation,
+                    amber/red/green semantics. Feels like issued kit.
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className={'hud-row' + (focused ? ' solo' : '')}>
+              <HUDFrame label="Holographic projection · 960 × 640">
+                <VariantA t={t} phase={tweaks.phase} forcedStep={forced} showPerf={tweaks.showPerf} holo={tweaks.holo}/>
+              </HUDFrame>
+              {!focused && (
+                <div className="annotation-card">
+                  <Annotations items={[
+                    { t: 'CASUALTY HEADER', d: 'Callsign, unit, blood type, allergy, weight, mechanism — the 9-line essentials auto-pulled from IFAK RFID + roster.' },
+                    { t: 'VITALS GRID', d: 'HR · BP · SpO₂ · RR · EtCO₂ · Temp · GCS · Shock Index. Each carries a sparkline so the medic sees trajectory, not just spot-values.' },
+                    { t: 'HEMODYNAMICS', d: 'Derived values: EBL, PI, MAP, pulse pressure — the triad of occult shock.' },
+                    { t: '3D INJURY HOLOGRAM', d: 'Rotating anatomical model. Injuries pulse by severity; interventions drop a ✓ ring at the treatment site. Hologram tint switchable in controls.' },
+                    { t: 'MARCH·PAWS TREE', d: 'All 9 steps in doctrinal order. Time-completed vs JTS benchmark; late steps flag with +delta.' },
+                    { t: 'PARALLEL TIMELINE', d: 'One track per MARCH step. Green ticks are interventions; amber is benchmark; red is NOW.' },
+                    { t: 'INTERVENTION LOG', d: 'Latest actions with T+ timestamp. Auto-feeds the TCCC Card for Role 2 handoff.' },
+                    { t: 'PERFORMANCE PANEL', d: 'Adherence %, order score, intervention count, per-step bar vs benchmark.' },
+                    { t: 'ALERT BAR', d: 'High-contrast escalation: shock trip, SpO₂ collapse, predicted pneumothorax — one imperative line.' },
+                  ]}/>
+                </div>
+              )}
+            </div>
+            {focused && showA && <NarrationPanel scenIdx={tweaks.scenario} speed={tweaks.scrollSpeed}/>}
+          </section>
+        )}
+
+        {showB && (
+          <section id="variant-b">
+            <div className="section-head">
+              <div>
+                <h2 className="section-title">Variant B — AEGIS Predictive</h2>
+                {!focused && (
+                  <p className="section-sub">
+                    Speculative near-future AI-augmented hologram. Translucent cyan glass,
+                    predictive vitals, auto-populated 9-line, P(survival) ring.
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className={'hud-row' + (focused ? ' solo' : '')}>
+              <HUDFrame label="Holographic projection · 960 × 640">
+                <VariantB t={t} phase={tweaks.phase} forcedStep={forced} showPerf={tweaks.showPerf} holo={tweaks.holo}/>
+              </HUDFrame>
+              {!focused && (
+                <div className="annotation-card">
+                  <Annotations items={[
+                    { t: 'P(SURVIVE) RING', d: 'Bayesian survival model fed by vitals trajectory, injury pattern, and resuscitation applied. A single-glance outcome signal.' },
+                    { t: 'TREND CARDS w/ PROJECTION', d: 'Large-numeral vitals with history + 30s AI projection (dashed). Medic sees where the patient is heading.' },
+                    { t: 'ANATOMICAL HOLOGRAM', d: '3D volumetric body model, slowly rotating. Injury markers pulse by severity and track the anatomy; interventions drop ✓ rings at the treatment site.' },
+                    { t: 'MARCH·PAWS STREAM', d: 'Horizontal pill row of all 9 steps. Active step expands with AI-tuned clinical suggestion.' },
+                    { t: 'NEXT ACTION', d: 'The single most important instruction right now. The whole HUD supports this one cell.' },
+                    { t: 'PERFORMANCE TELEMETRY', d: 'Adherence, order, TQ time, trajectory — annotated with cohort position vs n=4,218 JTS records.' },
+                    { t: '9-LINE AUTO', d: 'Populated from vitals, GPS, kit. Transmitted to Role 2 the moment URGENT-SURG fires.' },
+                    { t: 'AI TRIAGE TAG', d: 'Bayesian triage class. Elevates PRIORITY → URGENT-SURGICAL as shock index crosses threshold.' },
+                    { t: 'INTERVENTION LEDGER', d: 'Tamper-evident, cryptographically signed log of every action, ready for AAR.' },
+                  ]}/>
+                </div>
+              )}
+            </div>
+            {focused && showB && <NarrationPanel scenIdx={tweaks.scenario} speed={tweaks.scrollSpeed}/>}
+          </section>
+        )}
+
+        {!focused && (
+          <section id="data-points">
+            <div className="section-head">
+              <div>
+                <h2 className="section-title">Data points the medic sees — and why</h2>
+                <p className="section-sub">
+                  What's on the glass is a deliberate edit. Everything here answers
+                  "what do I do next?" or "how am I doing?"
+                </p>
+              </div>
+            </div>
+            <div className="data-grid">
+              <div className="data-card">
+                <div style={{ fontSize: 10, letterSpacing: 2, color: '#8df0ff', marginBottom: 12 }}>LIVE PHYSIOLOGY</div>
+                <DataList items={[
+                  ['HR, SBP/DBP, SpO₂, RR', 'Trauma primaries. Sparklines, not spot-values.'],
+                  ['EtCO₂', 'Best early proxy for perfusion + ROSC quality.'],
+                  ['Core temp', 'Trauma triad — coagulopathy predictor.'],
+                  ['GCS', 'Neuro baseline; flags TBI trajectory.'],
+                  ['Shock index (HR/SBP)', 'Early occult-shock tripwire at >0.9.'],
+                  ['Perfusion index', 'Pulse-ox-derived vasotone signal.'],
+                  ['EBL estimate', 'Integrated bleed rate + TQ/seal effects.'],
+                  ['MAP, pulse pressure', 'Derived. Drives resuscitation dosing.'],
+                ]}/>
+              </div>
+              <div className="data-card">
+                <div style={{ fontSize: 10, letterSpacing: 2, color: '#8df0ff', marginBottom: 12 }}>PROTOCOL & INTERVENTION</div>
+                <DataList items={[
+                  ['MARCH·PAWS priority tree', 'Doctrine-locked order. Auto-escalates on vitals.'],
+                  ['Active step', 'One cell, loud. Medic never guesses.'],
+                  ['Completed steps + T+', 'Timestamped against JTS benchmark.'],
+                  ['Parallel timeline', 'Shows temporal overlap of interventions.'],
+                  ['Body-map markers', 'Injury + intervention locations.'],
+                  ['Intervention log', 'Feeds TCCC Card + AAR automatically.'],
+                  ['Medication ledger', 'TXA, ketamine, antibiotics — dose + route.'],
+                  ['Next-action suggestion', 'AI-tuned clinical prompt for current step.'],
+                ]}/>
+              </div>
+              <div className="data-card">
+                <div style={{ fontSize: 10, letterSpacing: 2, color: '#8df0ff', marginBottom: 12 }}>PERFORMANCE FEEDBACK</div>
+                <DataList items={[
+                  ['Time-to-TQ', 'TCCC gold standard: ≤60s from contact.'],
+                  ['Time-to-airway', '≤120s benchmark; escalates if delayed.'],
+                  ['Time-to-needle-D', '≤180s for suspected tension pneumo.'],
+                  ['Adherence %', 'Composite: benchmarks hit vs total.'],
+                  ['Order score', 'Steps done in canonical MARCH order.'],
+                  ['Trajectory', 'Improving / stable / deteriorating (SBP slope).'],
+                  ['Cohort percentile', 'Your time vs JTS cohort (n=4,218).'],
+                  ['Deviation log', 'Any out-of-order or missed steps for AAR.'],
+                ]}/>
+              </div>
+              <div className="data-card">
+                <div style={{ fontSize: 10, letterSpacing: 2, color: '#8df0ff', marginBottom: 12 }}>CONTEXT & HANDOFF</div>
+                <DataList items={[
+                  ['TCCC phase', 'CUF / TFC / TACEVAC — UI density adapts.'],
+                  ['Elapsed since contact', 'The only clock that matters.'],
+                  ['9-line EVAC auto-fill', 'GPS, precedence, special equipment, pax.'],
+                  ['Role 2 uplink status', 'Latency + handshake with surgical team.'],
+                  ['Mesh net status', 'For multi-casualty coordination.'],
+                  ['Kit inventory burn', 'TQs, seals, blood units remaining.'],
+                  ['IR strobe / LZ marker', 'Activation state for inbound Dustoff.'],
+                  ['Battery + GPS lock', 'The kit itself has to survive too.'],
+                ]}/>
+              </div>
+            </div>
+          </section>
+        )}
+      </div>
+    </>
+  );
+}
+
+function Annotations({ items }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      {items.map((it, i) => (
+        <div key={i}>
+          <div style={{ fontSize: 10, letterSpacing: 1.8, color: '#b86b3a', fontWeight: 700, marginBottom: 3 }}>{it.t}</div>
+          <div style={{ fontSize: 12, color: 'rgba(30,24,18,0.78)', lineHeight: 1.5 }}>{it.d}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function DataList({ items }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontFamily: 'JetBrains Mono, monospace' }}>
+      {items.map((row, i) => (
+        <div key={i}>
+          <div style={{ fontSize: 11, color: '#8df0ff', letterSpacing: 0.5, fontWeight: 600 }}>{row[0]}</div>
+          <div style={{ fontSize: 10, color: '#7f98b3', lineHeight: 1.5, marginTop: 2 }}>{row[1]}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
