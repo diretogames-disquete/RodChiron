@@ -72,15 +72,42 @@ export const CASES = [
 
 export const REVIEW_TYPES = CASES.map((c) => c.name);
 
-export function caseByName(name) {
+/**
+ * Validate/coerce a user-edited case list (e.g. brand/review-cases.json) into
+ * the shape the prompt and the approval floor need. Returns null if nothing
+ * usable, so callers can fall back to the built-in CASES.
+ */
+export function sanitizeCases(raw) {
+  if (!Array.isArray(raw)) return null;
+  const out = raw
+    .filter((c) => c && typeof c === "object" && typeof c.name === "string" && c.name.trim())
+    .map((c, i) => ({
+      n: i + 1,
+      name: c.name.trim(),
+      family: typeof c.family === "string" && c.family.trim() ? c.family.trim() : "Positive",
+      approval: APPROVAL_LEVELS[c.approval] ? c.approval : "check",
+      trigger: typeof c.trigger === "string" ? c.trigger.trim() : "",
+      strategy: typeof c.strategy === "string" ? c.strategy.trim() : "",
+    }));
+  return out.length ? out : null;
+}
+
+/** Family names in order of first appearance in a case list. */
+export function familiesOf(cases) {
+  const seen = [];
+  for (const c of cases || CASES) if (!seen.includes(c.family)) seen.push(c.family);
+  return seen;
+}
+
+export function caseByName(name, cases = CASES) {
   if (typeof name !== "string") return null;
   const t = name.trim().toLowerCase();
-  return CASES.find((c) => c.name.toLowerCase() === t) || null;
+  return (cases || CASES).find((c) => c.name.toLowerCase() === t) || null;
 }
 
 /** The stricter of the model's stated level and the detected case's floor. */
-export function effectiveApproval(detectedType, modelLevel) {
-  const c = caseByName(detectedType);
+export function effectiveApproval(detectedType, modelLevel, cases = CASES) {
+  const c = caseByName(detectedType, cases);
   const floor = c ? c.approval : "check";
   const m = typeof modelLevel === "string" && APPROVAL_LEVELS[modelLevel] ? modelLevel : "check";
   return APPROVAL_LEVELS[m].rank >= APPROVAL_LEVELS[floor].rank ? m : floor;
@@ -149,11 +176,11 @@ export const OUTPUT_SCHEMA = {
  * floor: the detected case's level wins if the model under-calls it, and
  * Owner/Legal always implies needs_human_review.
  */
-export function normalizeResult(obj) {
+export function normalizeResult(obj, cases = CASES) {
   const o = obj && typeof obj === "object" ? obj : {};
   const opts = Array.isArray(o.options) ? o.options : [];
   const detected = typeof o.detected_type === "string" ? o.detected_type : "Unknown";
-  const approval = effectiveApproval(detected, o.approval_level);
+  const approval = effectiveApproval(detected, o.approval_level, cases);
   const mustReview = approval === "owner" || approval === "legal";
   return {
     detected_type: detected,

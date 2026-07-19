@@ -134,25 +134,38 @@ These are the habits that turn "replying to reviews" into real marketing:
    win the argument. The tool is built to do exactly this — and it'll flag the truly
    nasty or legal ones so you pause and handle them right.
 
-3. **Name your technicians.** When a reviewer names Rheanna or Amber, the reply
-   celebrates them by name. It builds each tech a following, shows you're a real
-   team, and makes staff feel seen. (Add or edit your roster in **Settings ▸ Salon &
-   voice**.)
+3. **Name your technicians — and give each one a personality.** When a reviewer
+   names Rheanna or Amber, the reply celebrates them by name. In **Settings ▸
+   Salon & voice** every technician now has three fields: her **name**, an
+   **archetype** (how the voice frames her — "meticulous by nature," "the
+   first-visit converter"), and a **private note** the model uses for context
+   but never quotes. Add new hires, remove departures, tune how each is talked
+   about — it's all yours.
 
-4. **Keep your price current.** In **Settings ▸ Salon & voice**, set your real
-   price. When someone grumbles about cost, the tool can gently frame the *value*
-   (natural-nail care, real sterilization, single-use files) — never argue the
+4. **Keep your salon's identity current.** In **Settings ▸ Salon & voice**, set
+   your salon name, city, **your own name as owner** (the tough replies sign
+   from you personally), your real price, and your sign-off. When someone
+   grumbles about cost, the tool gently frames the *value* — never argue the
    number, just explain why the care is worth it.
 
-5. **"Save as exemplar" the replies you love.** Whenever a reply comes out perfect
+5. **Make the playbook yours.** **Settings ▸ Review cases** shows all 22
+   situations the tool knows how to handle — each with the strategy it follows
+   and who has to approve the reply. Everything is editable: rename a case,
+   tighten a strategy, change who signs off, delete cases you never see, or
+   **add your own** (walk-in complaints, no-show disputes, whatever your salon
+   actually gets). New cases behave exactly like built-in ones — they show up in
+   the dropdown, drive the reply strategy, and enforce their approval level.
+   One-click **Reset** brings back the original 22 anytime.
+
+6. **"Save as exemplar" the replies you love.** Whenever a reply comes out perfect
    (or you tweak it just right), hit **Save as exemplar.** The tool learns from those
    and gets more "you" over time.
 
-6. **Turn raves into marketing.** For standout reviews, one of the options is a
+7. **Turn raves into marketing.** For standout reviews, one of the options is a
    "testimonial invitation" — a gracious way to ask permission to feature their
    words. Great reviews are free advertising once you have the OK to use them.
 
-7. **Follow the colored approval chip.** Every reply now comes with a small chip
+8. **Follow the colored approval chip.** Every reply now comes with a small chip
    that tells you who should look at it before it posts, straight from your
    response playbook:
    - **Auto** (green) — anyone trained on the voice can post it after a read.
@@ -163,14 +176,14 @@ These are the habits that turn "replying to reviews" into real marketing:
    The app enforces this: red- and purple-chip replies always carry the
    **"needs your sign-off"** banner and are marked as drafts.
 
-8. **Read the "Deliberately left out" box.** Under the replies, the tool lists what
+9. **Read the "Deliberately left out" box.** Under the replies, the tool lists what
    it *chose not to say* — no refund talk, no arguing the timeline, no naming the
    tech in a complaint — and the risk each omission avoids. That's your playbook
    working. If you edit a reply, don't add those things back in. And when a
    **"fragile wording"** warning appears (it will on injury claims), it tells you
    which passage not to trim — edit it longer, never shorter.
 
-9. **Keep costs tiny.** Look at the little line above the replies — it shows about
+10. **Keep costs tiny.** Look at the little line above the replies — it shows about
    how much each generation cost. For everyday replies, use a cheap model (pick it in
    **"Run this with"**); save the premium one for the tricky, high-stakes reviews.
 

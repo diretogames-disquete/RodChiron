@@ -2,7 +2,7 @@
 // The voice is DATA-DRIVEN — nothing here hardcodes voice rules; it stitches
 // together what /brand provides plus the v2.0 case library from schema.js.
 // Edit the brand files (or CASES in schema.js), not this function.
-import { CASES, FAMILIES, APPROVAL_LEVELS } from "./schema.js";
+import { CASES, APPROVAL_LEVELS, familiesOf } from "./schema.js";
 
 function rosterBlock(techs) {
   if (!Array.isArray(techs) || techs.length === 0) return "(no roster on file)";
@@ -16,13 +16,15 @@ function rosterBlock(techs) {
     .join("\n");
 }
 
-function caseLibraryBlock() {
+function caseLibraryBlock(cases) {
   const lines = [];
-  for (const fam of FAMILIES) {
+  for (const fam of familiesOf(cases)) {
     lines.push(`\n## ${fam}`);
-    for (const c of CASES.filter((x) => x.family === fam)) {
+    for (const c of cases.filter((x) => x.family === fam)) {
       lines.push(
-        `${String(c.n).padStart(2, "0")}. ${c.name} [approval: ${c.approval}] — trigger: ${c.trigger}.\n    ${c.strategy}`
+        `${String(c.n).padStart(2, "0")}. ${c.name} [approval: ${c.approval}]` +
+          (c.trigger ? ` — trigger: ${c.trigger}.` : ".") +
+          (c.strategy ? `\n    ${c.strategy}` : "")
       );
     }
   }
@@ -75,15 +77,16 @@ export function buildSystemPrompt(brand) {
 
   sections.push(`# Technician roster (never invent a technician)\n${rosterBlock(brand.technicians)}`);
 
+  const cases = Array.isArray(brand.cases) && brand.cases.length ? brand.cases : CASES;
   sections.push(
-    `# The case library — classify first (22 cases, 5 families)\n` +
+    `# The case library — classify first (${cases.length} cases, ${familiesOf(cases).length} families)\n` +
       `Classify the review as exactly ONE case by name, then follow that case's strategy for ` +
       `length, tone, and what to refuse to say. Approval levels: ` +
       Object.entries(APPROVAL_LEVELS)
         .map(([k, v]) => `${k} = ${v.desc}`)
         .join(" · ") +
       `\n` +
-      caseLibraryBlock()
+      caseLibraryBlock(cases)
   );
 
   sections.push(

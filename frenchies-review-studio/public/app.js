@@ -58,9 +58,11 @@ const el = {
   toast: $("#toast"),
 };
 
-// v2.0 case library (client copy — names/families/approvals only; the full
-// strategies live server-side in lib/schema.js and drive the prompt there).
-const CASES = [
+// v2.0 case library — FALLBACK client copy (names/families/approvals only).
+// The live list comes from GET /api/config, which reads the editable
+// brand/review-cases.json, so edits and added cases show up here without
+// touching this file. This copy only covers a config fetch failing.
+let CASES = [
   { name: "Wordless Star", family: "Positive", approval: "auto" },
   { name: "Short Positive", family: "Positive", approval: "auto" },
   { name: "Medium Positive", family: "Positive", approval: "auto" },
@@ -84,8 +86,15 @@ const CASES = [
   { name: "Suspicious or Fake", family: "Edge & escalation", approval: "owner" },
   { name: "Discrimination or Harassment Claim", family: "Edge & escalation", approval: "legal" },
 ];
-const FAMILIES = ["Positive", "Mixed & neutral", "Negative", "Time-shifted", "Edge & escalation"];
-const REVIEW_TYPES = CASES.map((c) => c.name);
+let FAMILIES = ["Positive", "Mixed & neutral", "Negative", "Time-shifted", "Edge & escalation"];
+let REVIEW_TYPES = CASES.map((c) => c.name);
+function adoptCases(list) {
+  if (!Array.isArray(list) || !list.length) return;
+  CASES = list.filter((c) => c && typeof c.name === "string" && c.name.trim());
+  FAMILIES = [];
+  for (const c of CASES) if (!FAMILIES.includes(c.family)) FAMILIES.push(c.family);
+  REVIEW_TYPES = CASES.map((c) => c.name);
+}
 const APPROVAL_META = {
   auto: { label: "Auto", desc: "Any trained team member can post after a read-through." },
   check: { label: "Check", desc: "One second pair of eyes — usually the salon lead — before posting." },
@@ -121,6 +130,7 @@ async function init() {
   try {
     const cfg = await (await fetch("/api/config")).json();
     state.config = cfg;
+    adoptCases(cfg.cases);
     if (cfg.salon?.name) {
       el.salonName.textContent = cfg.salon.name;
       el.salonSub.textContent = `Review Response Studio${cfg.salon.city ? " · " + cfg.salon.city : ""}`;

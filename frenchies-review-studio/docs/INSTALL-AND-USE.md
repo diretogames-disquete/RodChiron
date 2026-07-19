@@ -192,10 +192,11 @@ generate again:
 
 | File | Controls |
 |---|---|
-| `brand-voice.md` | The voice principles and the hard "never"s. |
+| `brand-voice.md` | The voice principles and the never-say list. |
 | `voice-exemplars.md` | Approved responses used as few-shot anchors (learning loop appends here). |
-| `salon-facts.json` | The only facts the model may assert — name, city, **`price_point_usd`**, sterilization, etc. |
+| `salon-facts.json` | The only facts the model may assert — name, city, **`owner`**, **`price_point_usd`**, sterilization, etc. |
 | `technicians.json` | The roster (name, archetype, note). Don't invent archetypes. |
+| `review-cases.json` | **The whole case library** — ships with the 22 v2.0 cases. Edit any case's name, family, trigger, strategy, or approval level, or add/remove cases; the prompt, the detected-case dropdown, and the approval floor all follow. Invalid entries are ignored; delete the file to restore the built-ins. |
 | `review-response-library.md` | Response patterns + opener-rotation banks. |
 | `operational-flags.md` | Systemic issues to watch for. |
 | `technician-profiles.md` | Longer human-readable technician context. |
@@ -203,13 +204,20 @@ generate again:
 
 ### Standalone version — in-app + embedded
 
-- **Settings ▸ Salon & voice:** edit salon name, city, **price**, sign-off, and
-  the technician roster (persisted to the browser).
+- **Settings ▸ Salon & voice:** edit salon name, city, **owner** (signs the
+  tough replies), **price**, sign-off, and the full technician roster — each
+  technician has a name, an archetype (how the voice frames her), and a private
+  note. Persisted to the browser.
+- **Settings ▸ Review cases:** the full case editor — every case's name, family,
+  approval level, trigger, and strategy is editable; **＋ Add case** appends your
+  own; ✕ removes one; **Reset** restores the 22 library defaults. The detected-
+  case dropdown, the system prompt, and the enforced approval floor all follow
+  your list on the next generation.
 - **Voice principles, exemplars, pricing** are embedded in the file — edit the
   `BRAND_DEFAULT` and `PRICES` blocks in the HTML source to change them.
-- **Voice library export/import:** carry your salon settings, roster, and saved
-  responses to another device (Settings ▸ Salon & voice ▸ Export / Import). **API
-  keys are never included** in the export.
+- **Voice library export/import:** carry your salon settings, roster, customized
+  cases, and saved responses to another device (Settings ▸ Salon & voice ▸
+  Export / Import). **API keys are never included** in the export.
 
 ---
 

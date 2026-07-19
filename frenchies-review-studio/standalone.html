@@ -71,6 +71,22 @@ button { font-family: inherit; cursor: pointer; }
 .salongrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .salongrid .field { margin-top: 0; }
 .salongrid .full { grid-column: 1 / -1; }
+.ghost.sm { padding: 7px 12px; font-size: 12.5px; }
+.techrows { display: flex; flex-direction: column; gap: 6px; }
+.trow { display: grid; grid-template-columns: 1fr 1fr 1.6fr auto; gap: 6px; align-items: center; }
+.trow input { height: 34px; font-size: 13px; }
+.trow .xbtn, .crow .xbtn { border: 1px solid var(--line-strong); background: var(--surface); border-radius: 8px; width: 30px; height: 30px; font-size: 14px; color: var(--muted); line-height: 1; }
+.trow .xbtn:hover, .crow .xbtn:hover { background: var(--crit-bg); color: var(--crit); border-color: var(--crit-bg); }
+.crow { border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin-bottom: 10px; background: var(--surface); }
+.crow .chd { display: grid; grid-template-columns: 34px 1.3fr 1fr 130px auto; gap: 6px; align-items: center; margin-bottom: 6px; }
+.crow .cnum { font-size: 11px; color: var(--muted); font-weight: 700; text-align: center; }
+.crow input, .crow select { height: 34px; font-size: 13px; }
+.crow .ctrig { margin-bottom: 6px; }
+.crow .ctrig input { width: 100%; }
+.crow textarea { width: 100%; font-size: 12.5px; line-height: 1.5; min-height: 56px; resize: vertical; }
+.crow .capprove { text-transform: capitalize; }
+.cfam-h { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 700; margin: 14px 0 8px; }
+.cfam-h:first-child { margin-top: 0; }
 .vlsec { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
 .vlsec h4 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-2); margin: 0 0 4px; }
 .vlsec .fh { font-size: 12.5px; color: var(--muted); margin: 0 0 10px; }
@@ -275,6 +291,7 @@ input:focus, select:focus, textarea:focus, button:focus-visible { outline: 2px s
     <div class="tabs">
       <button data-tab="keys" class="active">API keys</button>
       <button data-tab="salon">Salon &amp; voice</button>
+      <button data-tab="cases">Review cases</button>
     </div>
     <div class="mb" id="tabKeys">
       <p class="lock" id="keyLock">🔒 This is a standalone file with no server, so keys are stored in <b>this browser</b> (localStorage) on this device and sent straight to the provider you run — nowhere else. Keep this file to yourself; don't host it publicly with keys saved. After saving, only the last 4 digits show.</p>
@@ -285,9 +302,14 @@ input:focus, select:focus, textarea:focus, button:focus-visible { outline: 2px s
       <div class="salongrid">
         <div class="field"><label>Salon name</label><input id="sfName" type="text"></div>
         <div class="field"><label>City</label><input id="sfCity" type="text"></div>
+        <div class="field"><label>Owner (signs the tough replies)</label><input id="sfOwner" type="text"></div>
         <div class="field"><label>Price point (USD)</label><input id="sfPrice" type="number" min="0"></div>
-        <div class="field"><label>Sign-off (optional)</label><input id="sfSignoff" type="text"></div>
-        <div class="field full"><label>Technicians (one per line)</label><textarea id="sfTechs" rows="5"></textarea></div>
+        <div class="field full"><label>Sign-off (optional)</label><input id="sfSignoff" type="text"></div>
+      </div>
+      <div class="field full" style="margin-top:12px">
+        <label>Technicians — name · archetype (how the voice frames her) · private note</label>
+        <div id="techRows" class="techrows"></div>
+        <button class="ghost sm" id="techAdd" style="margin-top:8px">＋ Add technician</button>
       </div>
       <div style="margin-top:14px;display:flex;gap:10px;align-items:center">
         <button class="primary sm" id="salonSave">Save salon settings</button>
@@ -296,7 +318,7 @@ input:focus, select:focus, textarea:focus, button:focus-visible { outline: 2px s
       <div class="vlsec">
         <h4>Voice library</h4>
         <p class="fh" id="vlCount">—</p>
-        <p class="fh">Move your saved responses, salon settings, and technician roster to another device or browser. <b>API keys are never included</b> in the export.</p>
+        <p class="fh">Move your saved responses, salon settings, technician roster, and customized review cases to another device or browser. <b>API keys are never included</b> in the export.</p>
         <div class="vlrow">
           <button class="ghost" id="vlExport">⭳ Export voice library</button>
           <button class="ghost" id="vlImport">⭱ Import</button>
@@ -305,9 +327,19 @@ input:focus, select:focus, textarea:focus, button:focus-visible { outline: 2px s
         <input type="file" id="vlFile" accept="application/json" class="hidden" />
       </div>
     </div>
+    <div class="mb hidden" id="tabCases">
+      <p class="lock">The <b>case library</b> is what the app classifies every review into — each case carries its own strategy and a minimum <b>approval level</b>. Edit any case, add your own, or remove ones you never see. Changes apply to the next generation: the detected-case dropdown, the system prompt, and the approval floor all follow this list. <span id="casesCount"></span></p>
+      <div id="caseRows"></div>
+      <div style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <button class="ghost sm" id="caseAdd">＋ Add case</button>
+        <button class="primary sm" id="casesSave">Save cases</button>
+        <button class="ghost" id="casesReset">Reset to the 22 library defaults</button>
+      </div>
+    </div>
     <div class="mf"><span class="muted" id="activeHint"></span><button class="primary sm" id="keysDone">Done</button></div>
   </div>
 </div>
+<datalist id="familyList"></datalist>
 
 <datalist id="anthropicModels"></datalist>
 <datalist id="openaiModels"></datalist>
@@ -458,10 +490,20 @@ const CASES = [
   { n: 21, name: "Suspicious or Fake", family: "Edge & escalation", approval: "owner", trigger: "No record of the visit", strategy: "NEVER accuse them of being fake publicly — and never threaten legal action to force removal (the FTC Consumer Review Rule prohibits groundless legal threats, intimidation, and false public accusations to remove reviews). State the absence of a record neutrally, invite direct contact, 2 sentences, unbothered. Report through the platform on factual grounds." },
   { n: 22, name: "Discrimination or Harassment Claim", family: "Edge & escalation", approval: "legal", trigger: "Bias, dignity, or conduct claim", strategy: "Treat the claim as serious on its face. Never dispute their experience or defend the team's intent — 'that's not who we are' reads as dismissal. No conclusions, no findings, no timelines, no names. Move to a direct private channel with the owner immediately. Short, grave, human — NO brand-voice warmth or wit; charm reads as flippancy here." },
 ];
-const REVIEW_TYPES = CASES.map((c) => c.name);
-function caseByName(name) { if (typeof name !== "string") return null; const t = name.trim().toLowerCase(); return CASES.find((c) => c.name.toLowerCase() === t) || null; }
-function effectiveApproval(detectedType, modelLevel) {
-  const c = caseByName(detectedType); const floor = c ? c.approval : "check";
+/* The case library is editable in Settings → Review cases. Custom cases live in
+   localStorage (s.cases); the built-in CASES above are the reset-to defaults. */
+function sanitizeCases(raw) {
+  if (!Array.isArray(raw)) return null;
+  const out = raw
+    .filter((c) => c && typeof c === "object" && typeof c.name === "string" && c.name.trim())
+    .map((c, i) => ({ n: i + 1, name: c.name.trim(), family: typeof c.family === "string" && c.family.trim() ? c.family.trim() : "Positive", approval: APPROVAL_LEVELS[c.approval] ? c.approval : "check", trigger: typeof c.trigger === "string" ? c.trigger.trim() : "", strategy: typeof c.strategy === "string" ? c.strategy.trim() : "" }));
+  return out.length ? out : null;
+}
+function currentCases() { return sanitizeCases(store().cases) || CASES; }
+function familiesOf(cases) { const seen = []; for (const c of cases) if (!seen.includes(c.family)) seen.push(c.family); return seen; }
+function caseByName(name, cases) { if (typeof name !== "string") return null; const t = name.trim().toLowerCase(); return (cases || currentCases()).find((c) => c.name.toLowerCase() === t) || null; }
+function effectiveApproval(detectedType, modelLevel, cases) {
+  const c = caseByName(detectedType, cases); const floor = c ? c.approval : "check";
   const m = typeof modelLevel === "string" && APPROVAL_LEVELS[modelLevel] ? modelLevel : "check";
   return APPROVAL_LEVELS[m].rank >= APPROVAL_LEVELS[floor].rank ? m : floor;
 }
@@ -503,14 +545,22 @@ function saveStore(s) { try { localStorage.setItem(LS_KEY, JSON.stringify(s)); }
 function store() { const s = loadStore(); s.providers = s.providers || {}; s.savedExemplars = s.savedExemplars || []; return s; }
 
 /* ---------------- brand (defaults + salon/tech overrides) ---------------- */
+function normTech(t) {
+  // Accepts a legacy name string or a {name, archetype, note} object.
+  if (typeof t === "string") { const d = BRAND_DEFAULT.technicians.find((x) => x.name === t); return d || { name: t, archetype: "", note: "" }; }
+  if (t && typeof t === "object" && typeof t.name === "string" && t.name.trim()) return { name: t.name.trim(), archetype: typeof t.archetype === "string" ? t.archetype.trim() : "", note: typeof t.note === "string" ? t.note.trim() : "" };
+  return null;
+}
+function currentTechnicians() {
+  const s = store();
+  const list = Array.isArray(s.technicians) ? s.technicians.map(normTech).filter(Boolean) : [];
+  return list.length ? list : BRAND_DEFAULT.technicians;
+}
 function loadBrand() {
   const s = store();
   const salon = Object.assign({}, BRAND_DEFAULT.salon, s.salon || {});
-  const technicians = Array.isArray(s.technicians) && s.technicians.length
-    ? s.technicians.map((name) => { const d = BRAND_DEFAULT.technicians.find((t) => t.name === name); return d || { name, archetype: "", note: "" }; })
-    : BRAND_DEFAULT.technicians;
-  const exemplars = [...BRAND_DEFAULT.exemplars, ...(s.savedExemplars || [])].slice(-8);
-  return { salon, technicians, voice: BRAND_DEFAULT.voice, library: BRAND_DEFAULT.library, operationalFlags: BRAND_DEFAULT.operationalFlags, exemplars };
+  const exemplars = [...BRAND_DEFAULT.exemplars, ...(s.savedExemplars || [])].slice(-10);
+  return { salon, technicians: currentTechnicians(), cases: currentCases(), voice: BRAND_DEFAULT.voice, library: BRAND_DEFAULT.library, operationalFlags: BRAND_DEFAULT.operationalFlags, exemplars };
 }
 
 /* ---------------- system + user prompt ---------------- */
@@ -518,11 +568,11 @@ function rosterBlock(techs) {
   if (!techs || !techs.length) return "(no roster on file)";
   return techs.map((t) => { const p = [`- ${t.name}`]; if (t.archetype) p.push(`archetype: ${t.archetype}`); if (t.note) p.push(`note: ${t.note}`); return p.join(" — "); }).join("\n");
 }
-function caseLibraryBlock() {
+function caseLibraryBlock(cases) {
   const lines = [];
-  for (const fam of FAMILIES) {
+  for (const fam of familiesOf(cases)) {
     lines.push(`\n## ${fam}`);
-    for (const c of CASES.filter((x) => x.family === fam)) lines.push(`${String(c.n).padStart(2, "0")}. ${c.name} [approval: ${c.approval}] — trigger: ${c.trigger}.\n    ${c.strategy}`);
+    for (const c of cases.filter((x) => x.family === fam)) lines.push(`${String(c.n).padStart(2, "0")}. ${c.name} [approval: ${c.approval}]` + (c.trigger ? ` — trigger: ${c.trigger}.` : ".") + (c.strategy ? `\n    ${c.strategy}` : ""));
   }
   return lines.join("\n");
 }
@@ -537,7 +587,8 @@ function buildSystemPrompt(brand) {
   if (brand.voice) s.push(`# Brand voice — follow these exactly\n${brand.voice.trim()}`);
   if (brand.exemplars && brand.exemplars.length) s.push(`# House voice — approved exemplars (the gold standard to EMULATE, never copy)\nEmulate their moves; never reuse their words.\n\n${brand.exemplars.join("\n\n")}`);
   s.push(`# Technician roster (never invent a technician)\n${rosterBlock(brand.technicians)}`);
-  s.push(`# The case library — classify first (22 cases, 5 families)\nClassify the review as exactly ONE case by name, then follow that case's strategy for length, tone, and what to refuse to say. Approval levels: ${Object.entries(APPROVAL_LEVELS).map(([k, v]) => k + " = " + v.desc).join(" · ")}\n${caseLibraryBlock()}`);
+  const cases = Array.isArray(brand.cases) && brand.cases.length ? brand.cases : CASES;
+  s.push(`# The case library — classify first (${cases.length} cases, ${familiesOf(cases).length} families)\nClassify the review as exactly ONE case by name, then follow that case's strategy for length, tone, and what to refuse to say. Approval levels: ${Object.entries(APPROVAL_LEVELS).map(([k, v]) => k + " = " + v.desc).join(" · ")}\n${caseLibraryBlock(cases)}`);
   s.push(`# The escalation ladder (apply while classifying)\n1. Read for the REAL risk first: the most dangerous element is often not what the reviewer emphasized. A late-arrival rant containing one line about bleeding is an Injury case, not a Policy case — classify by the highest-stakes element present.\n2. When a review spans two cases, the STRICTER approval level always wins.\n3. Draft with full private context (the owner's notes), publish with almost none of it — the owner's account informs strategy but never appears in the reply.\n4. Owner- and Legal-level cases are ALWAYS needs_human_review: true. Draft options remain factual and calm, never presented as one-click safe.\n5. On Owner/Legal-level replies, signing personally from the owner (e.g. "— ${owner}") usually lands better than a team sign-off; keep it optional elsewhere.`);
   if (brand.library) s.push(`# Response library & opener banks\n${brand.library.trim()}`);
   if (brand.operationalFlags) s.push(`# Operational flags to watch for (internal only)\n${brand.operationalFlags.trim()}`);
@@ -684,7 +735,8 @@ function shortLabelById(id) { const p = (state.config?.providers || []).find((x)
 
 const el = {};
 ["salonName","salonSub","quickSwitch","keysBtn","activeLabel","reviewText","stars","clearStar","optionCount","runWith","runProvider","runModel","runModels","usageBar","techSelect","techFree","platformSelect","contextNote","generateBtn","exampleSelect","resultsHead","typeSelect","techDetected","regenBtn","humanBanner","rosterNote","cards","approvalChip","fragileNote","leftOutPanel","leftOutList","flagsPanel","flagsList","placeholder","loading","errorBox","keysOverlay","keysClose","keysDone","provList","activeHint","keyLock",
- "sfName","sfCity","sfPrice","sfSignoff","sfTechs","salonSave","salonReset",
+ "sfName","sfCity","sfOwner","sfPrice","sfSignoff","techRows","techAdd","salonSave","salonReset",
+ "caseRows","caseAdd","casesSave","casesReset","casesCount",
  "vlCount","vlExport","vlImport","vlClear","vlFile"].forEach((id) => (el[id] = document.getElementById(id)));
 
 function config() {
@@ -702,7 +754,8 @@ function init() {
   for (const p of cfg.providers) { const dl = document.getElementById(p.id + "Models"); if (dl && p.models) dl.innerHTML = p.models.map((m) => `<option value="${esc(m)}"></option>`).join(""); }
   el.techSelect.innerHTML = '<option value="">— none / detect —</option>' + cfg.technicians.map((n) => `<option value="${esc(n)}">${esc(n)}</option>`).join("");
   el.platformSelect.innerHTML = '<option value="">—</option>' + cfg.platforms.map((p) => `<option value="${esc(p)}">${esc(p)}</option>`).join("");
-  el.typeSelect.innerHTML = FAMILIES.map((fam) => `<optgroup label="${esc(fam)}">` + CASES.filter((c) => c.family === fam).map((c) => `<option value="${esc(c.name)}">${esc(c.name)}</option>`).join("") + `</optgroup>`).join("");
+  const cs = currentCases();
+  el.typeSelect.innerHTML = familiesOf(cs).map((fam) => `<optgroup label="${esc(fam)}">` + cs.filter((c) => c.family === fam).map((c) => `<option value="${esc(c.name)}">${esc(c.name)}</option>`).join("") + `</optgroup>`).join("");
   el.exampleSelect.innerHTML = '<option value="">—</option>' + FIXTURES.map((f, i) => `<option value="${i}">${esc(f.label)}</option>`).join("");
   if (!cfg.anyConfigured) openKeys();
 }
@@ -778,8 +831,9 @@ function showError(msg) { el.errorBox.innerHTML = `${esc(msg)}<br><button class=
 
 function render(result, input) {
   el.resultsHead.classList.remove("hidden");
-  el.typeSelect.value = REVIEW_TYPES.includes(result.detected_type) ? result.detected_type : "";
-  if (result.detected_type && !REVIEW_TYPES.includes(result.detected_type)) { const o = document.createElement("option"); o.value = o.textContent = result.detected_type; el.typeSelect.appendChild(o); el.typeSelect.value = result.detected_type; }
+  const knownTypes = currentCases().map((c) => c.name);
+  el.typeSelect.value = knownTypes.includes(result.detected_type) ? result.detected_type : "";
+  if (result.detected_type && !knownTypes.includes(result.detected_type)) { const o = document.createElement("option"); o.value = o.textContent = result.detected_type; el.typeSelect.appendChild(o); el.typeSelect.value = result.detected_type; }
   el.techDetected.innerHTML = result.technician ? `Technician: <b>${esc(result.technician)}</b>` : `<span class="muted">No technician named</span>`;
   const lvl = APPROVAL_LEVELS[result.approval_level] ? result.approval_level : null;
   if (lvl) { el.approvalChip.className = "approval " + lvl; el.approvalChip.textContent = APPROVAL_LEVELS[lvl].label; el.approvalChip.title = APPROVAL_LEVELS[lvl].desc; el.approvalChip.classList.remove("hidden"); }
@@ -867,16 +921,91 @@ function setActiveProvider(provider) {
   toast("Now using " + shortLabelById(provider));
 }
 
-/* ---- settings: salon ---- */
+/* ---- settings: salon + technicians ---- */
+function techRowHTML(t) {
+  return `<div class="trow">
+    <input type="text" data-tf="name" placeholder="Name" value="${esc(t.name || "")}" />
+    <input type="text" data-tf="archetype" placeholder="Archetype (e.g. Quality Anchor)" value="${esc(t.archetype || "")}" />
+    <input type="text" data-tf="note" placeholder="Private note (never quoted publicly)" value="${esc(t.note || "")}" />
+    <button type="button" class="xbtn" title="Remove">✕</button>
+  </div>`;
+}
+function renderTechRows(techs) {
+  el.techRows.innerHTML = techs.map(techRowHTML).join("");
+}
+function collectTechRows() {
+  return [...el.techRows.querySelectorAll(".trow")].map((row) => ({
+    name: row.querySelector('[data-tf="name"]').value.trim(),
+    archetype: row.querySelector('[data-tf="archetype"]').value.trim(),
+    note: row.querySelector('[data-tf="note"]').value.trim(),
+  })).filter((t) => t.name);
+}
 function fillSalonForm() {
   const s = store(); const salon = Object.assign({}, BRAND_DEFAULT.salon, s.salon || {});
-  el.sfName.value = salon.name || ""; el.sfCity.value = salon.city || ""; el.sfPrice.value = salon.price_point_usd ?? "";
+  el.sfName.value = salon.name || ""; el.sfCity.value = salon.city || ""; el.sfOwner.value = salon.owner || ""; el.sfPrice.value = salon.price_point_usd ?? "";
   el.sfSignoff.value = salon.signoff || "";
-  const techs = (Array.isArray(s.technicians) && s.technicians.length ? s.technicians : BRAND_DEFAULT.technicians.map((t) => t.name));
-  el.sfTechs.value = techs.join("\n");
+  renderTechRows(currentTechnicians());
   const n = (s.savedExemplars || []).length;
   el.vlCount.textContent = n ? `${n} saved response${n === 1 ? "" : "s"} in this browser (plus ${BRAND_DEFAULT.exemplars.length} built-in exemplars).` : `No saved responses yet — click “Save as exemplar” on a response you like.`;
 }
+el.techAdd.addEventListener("click", () => { el.techRows.insertAdjacentHTML("beforeend", techRowHTML({ name: "", archetype: "", note: "" })); el.techRows.lastElementChild.querySelector("input").focus(); });
+el.techRows.addEventListener("click", (e) => { const b = e.target.closest(".xbtn"); if (b) b.closest(".trow").remove(); });
+
+/* ---- settings: review cases editor ---- */
+function caseRowHTML(c, i) {
+  const approvals = Object.keys(APPROVAL_LEVELS).map((k) => `<option value="${k}"${c.approval === k ? " selected" : ""}>${APPROVAL_LEVELS[k].label}</option>`).join("");
+  return `<div class="crow" data-ci="${i}">
+    <div class="chd">
+      <span class="cnum">${String(i + 1).padStart(2, "0")}</span>
+      <input type="text" data-cf="name" placeholder="Case name" value="${esc(c.name || "")}" />
+      <input type="text" data-cf="family" list="familyList" placeholder="Family" value="${esc(c.family || "")}" />
+      <select data-cf="approval" class="capprove" title="Minimum sign-off before posting">${approvals}</select>
+      <button type="button" class="xbtn" title="Remove this case">✕</button>
+    </div>
+    <div class="ctrig"><input type="text" data-cf="trigger" placeholder="Trigger — how to recognize this case" value="${esc(c.trigger || "")}" /></div>
+    <textarea data-cf="strategy" rows="3" placeholder="Strategy — what the reply must do (and refuse to do) for this case">${esc(c.strategy || "")}</textarea>
+  </div>`;
+}
+function renderCaseRows() {
+  const cs = currentCases();
+  document.getElementById("familyList").innerHTML = [...new Set([...FAMILIES, ...familiesOf(cs)])].map((f) => `<option value="${esc(f)}"></option>`).join("");
+  el.caseRows.innerHTML = cs.map(caseRowHTML).join("");
+  const custom = Boolean(sanitizeCases(store().cases));
+  el.casesCount.innerHTML = `Currently <b>${cs.length}</b> case${cs.length === 1 ? "" : "s"}${custom ? " (customized — stored in this browser)" : " (the built-in library defaults)"}.`;
+}
+function collectCaseRows() {
+  return [...el.caseRows.querySelectorAll(".crow")].map((row) => ({
+    name: row.querySelector('[data-cf="name"]').value.trim(),
+    family: row.querySelector('[data-cf="family"]').value.trim(),
+    approval: row.querySelector('[data-cf="approval"]').value,
+    trigger: row.querySelector('[data-cf="trigger"]').value.trim(),
+    strategy: row.querySelector('[data-cf="strategy"]').value.trim(),
+  }));
+}
+el.caseRows.addEventListener("click", (e) => {
+  const b = e.target.closest(".xbtn"); if (!b) return;
+  if (el.caseRows.querySelectorAll(".crow").length <= 1) return toast("Keep at least one case.");
+  b.closest(".crow").remove();
+});
+el.caseAdd.addEventListener("click", () => {
+  const i = el.caseRows.querySelectorAll(".crow").length;
+  el.caseRows.insertAdjacentHTML("beforeend", caseRowHTML({ name: "", family: "", approval: "check", trigger: "", strategy: "" }, i));
+  const row = el.caseRows.lastElementChild; row.scrollIntoView({ block: "nearest" }); row.querySelector("input").focus();
+});
+el.casesSave.addEventListener("click", () => {
+  const rows = collectCaseRows();
+  const dropped = rows.filter((c) => !c.name).length;
+  const clean = sanitizeCases(rows);
+  if (!clean) return toast("⚠ Add at least one case with a name.");
+  const s = store(); s.cases = clean; saveStore(s);
+  init(); renderCaseRows();
+  toast(`Saved ${clean.length} case${clean.length === 1 ? "" : "s"} ✓${dropped ? ` (${dropped} unnamed row${dropped === 1 ? "" : "s"} dropped)` : ""}`);
+});
+el.casesReset.addEventListener("click", () => {
+  if (!confirm("Replace your customized case list with the 22 built-in library cases?")) return;
+  const s = store(); delete s.cases; saveStore(s);
+  init(); renderCaseRows(); toast("Case library reset to the 22 defaults.");
+});
 
 /* ---- voice library export / import ---- */
 function download(name, text, type) {
@@ -887,7 +1016,7 @@ function download(name, text, type) {
 }
 function exportLibrary() {
   const s = store();
-  const data = { _type: "frenchies-voice-library", version: 1, exportedAt: new Date().toISOString(), salon: s.salon || null, technicians: s.technicians || null, savedExemplars: s.savedExemplars || [] };
+  const data = { _type: "frenchies-voice-library", version: 2, exportedAt: new Date().toISOString(), salon: s.salon || null, technicians: s.technicians || null, cases: sanitizeCases(s.cases) || null, savedExemplars: s.savedExemplars || [] };
   download(`frenchies-voice-library-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(data, null, 2), "application/json");
   toast("Voice library exported");
 }
@@ -899,7 +1028,8 @@ el.vlFile.addEventListener("change", () => {
   r.onload = () => {
     let data; try { data = JSON.parse(r.result); } catch { return toast("⚠ Not a valid library file."); }
     if (!data || data._type !== "frenchies-voice-library" || !Array.isArray(data.savedExemplars)) return toast("⚠ That's not a Frenchies voice library.");
-    if (!confirm(`Import ${data.savedExemplars.length} saved response(s)${data.salon ? " + salon settings" : ""}? Saved responses merge with what you have; API keys are untouched.`)) return;
+    const importedCases = sanitizeCases(data.cases);
+    if (!confirm(`Import ${data.savedExemplars.length} saved response(s)${data.salon ? " + salon settings" : ""}${importedCases ? ` + ${importedCases.length} review cases` : ""}? Saved responses merge with what you have; API keys are untouched.`)) return;
     const s = store();
     const existing = new Set(s.savedExemplars || []);
     let added = 0;
@@ -907,7 +1037,8 @@ el.vlFile.addEventListener("change", () => {
     s.savedExemplars = [...existing];
     if (data.salon && typeof data.salon === "object") s.salon = data.salon;
     if (Array.isArray(data.technicians) && data.technicians.length) s.technicians = data.technicians;
-    saveStore(s); init(); fillSalonForm();
+    if (importedCases) s.cases = importedCases;
+    saveStore(s); init(); fillSalonForm(); renderCaseRows();
     toast(`Imported — ${added} new response${added === 1 ? "" : "s"} added.`);
   };
   r.readAsText(file);
@@ -920,15 +1051,15 @@ el.vlClear.addEventListener("click", () => {
 });
 el.salonSave.addEventListener("click", () => {
   const s = store();
-  s.salon = Object.assign({}, s.salon || {}, { name: el.sfName.value.trim() || BRAND_DEFAULT.salon.name, city: el.sfCity.value.trim(), price_point_usd: Number(el.sfPrice.value) || BRAND_DEFAULT.salon.price_point_usd, signoff: el.sfSignoff.value.trim() });
-  const techs = el.sfTechs.value.split("\n").map((x) => x.trim()).filter(Boolean);
+  s.salon = Object.assign({}, s.salon || {}, { name: el.sfName.value.trim() || BRAND_DEFAULT.salon.name, city: el.sfCity.value.trim(), owner: el.sfOwner.value.trim(), price_point_usd: Number(el.sfPrice.value) || BRAND_DEFAULT.salon.price_point_usd, signoff: el.sfSignoff.value.trim() });
+  const techs = collectTechRows();
   s.technicians = techs.length ? techs : undefined;
-  saveStore(s); init(); toast("Salon settings saved ✓");
+  saveStore(s); init(); fillSalonForm(); toast("Salon settings saved ✓");
 });
 el.salonReset.addEventListener("click", () => { const s = store(); delete s.salon; delete s.technicians; saveStore(s); fillSalonForm(); init(); toast("Reset to defaults."); });
 
 /* ---- modal + tabs ---- */
-function openKeys() { renderProviderList(); fillSalonForm(); el.keysOverlay.classList.add("show"); el.keysOverlay.setAttribute("aria-hidden", "false"); }
+function openKeys() { renderProviderList(); fillSalonForm(); renderCaseRows(); el.keysOverlay.classList.add("show"); el.keysOverlay.setAttribute("aria-hidden", "false"); }
 function closeKeys() { el.keysOverlay.classList.remove("show"); el.keysOverlay.setAttribute("aria-hidden", "true"); }
 el.keysBtn.addEventListener("click", openKeys);
 el.keysClose.addEventListener("click", closeKeys);
@@ -940,6 +1071,7 @@ document.querySelectorAll(".tabs button").forEach((b) => b.addEventListener("cli
   document.querySelectorAll(".tabs button").forEach((x) => x.classList.toggle("active", x === b));
   $("#tabKeys").classList.toggle("hidden", b.dataset.tab !== "keys");
   $("#tabSalon").classList.toggle("hidden", b.dataset.tab !== "salon");
+  $("#tabCases").classList.toggle("hidden", b.dataset.tab !== "cases");
 }));
 document.addEventListener("keydown", (e) => { if (e.key === "Escape" && el.keysOverlay.classList.contains("show")) closeKeys(); });
 el.generateBtn.addEventListener("click", generate);

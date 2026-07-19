@@ -154,17 +154,19 @@ PORT=3000</code></pre>
 <tr><th>File</th><th>Controls</th></tr>
 <tr><td><code>brand-voice.md</code></td><td>The voice principles and the hard "never"s.</td></tr>
 <tr><td><code>voice-exemplars.md</code></td><td>Approved responses used as few-shot anchors (learning loop appends here).</td></tr>
-<tr><td><code>salon-facts.json</code></td><td>The only facts the model may assert — name, city, <code>price_point_usd</code>, sterilization, etc.</td></tr>
+<tr><td><code>salon-facts.json</code></td><td>The only facts the model may assert — name, city, <code>owner</code>, <code>price_point_usd</code>, sterilization, etc.</td></tr>
 <tr><td><code>technicians.json</code></td><td>The roster (name, archetype, note). Don't invent archetypes.</td></tr>
+<tr><td><code>review-cases.json</code></td><td><strong>The whole case library</strong> — ships with the 22 v2.0 cases. Edit any case's name, family, trigger, strategy, or approval level, or add/remove cases; the prompt, the detected-case dropdown, and the approval floor all follow. Invalid entries are ignored; delete the file to restore the built-ins.</td></tr>
 <tr><td><code>review-response-library.md</code></td><td>Response patterns + opener-rotation banks.</td></tr>
 <tr><td><code>operational-flags.md</code></td><td>Systemic issues to watch for.</td></tr>
 <tr><td><code>pricing.json</code> (root)</td><td>USD per 1,000,000 tokens per model, for the cost estimate.</td></tr>
 </table>
 <h3>Standalone version — in-app + embedded</h3>
 <ul>
-<li><strong>Settings ▸ Salon &amp; voice:</strong> edit salon name, city, <strong>price</strong>, sign-off, and the technician roster (persisted to the browser).</li>
+<li><strong>Settings ▸ Salon &amp; voice:</strong> edit salon name, city, <strong>owner</strong> (signs the tough replies), <strong>price</strong>, sign-off, and the full technician roster — each technician has a name, an archetype (how the voice frames her), and a private note. Persisted to the browser.</li>
+<li><strong>Settings ▸ Review cases:</strong> the full case editor — every case's name, family, approval level, trigger, and strategy is editable; <strong>＋ Add case</strong> appends your own; ✕ removes one; <strong>Reset</strong> restores the 22 library defaults. The detected-case dropdown, the system prompt, and the enforced approval floor all follow your list on the next generation.</li>
 <li><strong>Voice principles, exemplars, pricing</strong> are embedded — edit the <code>BRAND_DEFAULT</code> and <code>PRICES</code> blocks in the HTML source to change them.</li>
-<li><strong>Voice library export/import:</strong> carry your salon settings, roster, and saved responses to another device (Settings ▸ Salon &amp; voice ▸ Export / Import). <strong>API keys are never included.</strong></li>
+<li><strong>Voice library export/import:</strong> carry your salon settings, roster, customized cases, and saved responses to another device (Settings ▸ Salon &amp; voice ▸ Export / Import). <strong>API keys are never included.</strong></li>
 </ul>
 
 <h2>8. Cost &amp; tokens</h2>

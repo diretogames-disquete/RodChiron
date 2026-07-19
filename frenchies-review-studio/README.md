@@ -84,14 +84,18 @@ Keep the little window open while you use the app; close it to stop.
     in-browser; first-party OpenAI is often blocked by CORS** (the settings panel
     flags this). If a provider is blocked, use the server version or route through
     OpenRouter.
-  - The brand voice/exemplars/pricing are embedded in the file; the salon name,
-    price, and technician roster are editable in-app (Settings → Salon & voice),
-    and "Save as exemplar" persists in the browser. To change the voice
-    principles, edit the `BRAND_DEFAULT` block in the file's source.
+  - The brand voice/exemplars/pricing are embedded in the file; the salon
+    identity (name, city, owner, price, sign-off), the full technician roster
+    (names, archetypes, private notes — **Settings → Salon & voice**), and the
+    entire **review-case library** (**Settings → Review cases**: edit, add, or
+    remove cases) are editable in-app, and "Save as exemplar" persists in the
+    browser. To change the voice principles, edit the `BRAND_DEFAULT` block in
+    the file's source.
   - **Move your voice library between devices:** Settings → Salon & voice →
-    **Export voice library** saves your salon settings, technician roster, and
-    saved responses to a JSON file (never your API keys). **Import** it into the
-    standalone file on another computer/browser to carry your voice over.
+    **Export voice library** saves your salon settings, technician roster,
+    customized review cases, and saved responses to a JSON file (never your API
+    keys). **Import** it into the standalone file on another computer/browser to
+    carry your voice over.
 
 ## Providers & API keys (bring your own, switch anytime)
 
@@ -158,8 +162,11 @@ Nothing is ever posted automatically.
 ### The case library (v2.0) — 22 cases in 5 families
 
 The classification the app runs on comes from the **Frenchies Master Review
-Response Prompt Library v2.0**. Every review is classified into exactly one case,
-and each case carries its own strategy and minimum approval level:
+Response Prompt Library v2.0** — and it's **fully editable**: the server version
+reads `brand/review-cases.json`, and the standalone has a **Settings → Review
+cases** editor (edit, add, or remove cases; reset to the 22 defaults anytime).
+Every review is classified into exactly one case, and each case carries its own
+strategy and minimum approval level:
 
 | Family | Cases | Doctrine |
 |---|---|---|
@@ -206,13 +213,20 @@ generation — edit a file, generate again, done:
 
 | File | What it controls |
 |---|---|
-| `brand-voice.md` | The voice principles and the hard "never"s. |
+| `brand-voice.md` | The voice principles and the never-say list. |
 | `voice-exemplars.md` | Approved responses loaded as few-shot anchors (the learning loop appends here). |
-| `salon-facts.json` | The only facts the model may assert — name, city, `price_point_usd`, sterilization, etc. **Update the price here** (it anchors value-defense replies). |
+| `salon-facts.json` | The only facts the model may assert — name, city, `owner`, `price_point_usd`, sterilization, etc. **Update the price here** (it anchors value-defense replies). |
 | `technicians.json` | The roster (names, archetypes, notes) that feeds the dropdown and framing. Don't invent archetypes — leave blank until known. |
+| `review-cases.json` | **The whole case library.** Ships with the 22 v2.0 cases; edit any case's name, family, trigger, strategy, or approval level — or add new cases — and the prompt, the detected-case dropdown, and the approval floor all follow. Invalid entries are ignored; delete the file to restore the built-ins. |
 | `review-response-library.md` | Response patterns and opener-rotation banks. |
 | `operational-flags.md` | The systemic issues to watch for. |
 | `technician-profiles.md` | Longer human-readable technician context. |
+
+**In the standalone**, all of this is editable in-app instead: **Settings → Salon &
+voice** (salon name, city, owner, price, sign-off, and the full technician roster
+with archetypes and private notes) and **Settings → Review cases** (every case's
+name, family, approval level, trigger, and strategy — plus add/remove/reset).
+Customizations live in your browser and travel with **Export voice library**.
 
 ---
 

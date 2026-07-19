@@ -3,6 +3,7 @@
 import { readFileSync, existsSync, appendFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import { CASES, sanitizeCases } from "./schema.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const BRAND_DIR = join(HERE, "..", "brand");
@@ -47,6 +48,10 @@ export function loadBrand() {
       signoff: "— The Frenchies Team",
     }),
     technicians: readJsonIfExists("technicians.json", []),
+    // The case library is editable data too: brand/review-cases.json ships with
+    // the 22 v2.0 cases; edit, add, or remove cases there and the prompt, the
+    // dropdown, and the approval floor all follow. Falls back to the built-ins.
+    cases: sanitizeCases(readJsonIfExists("review-cases.json", null)) || CASES,
     voice: readIfExists("brand-voice.md"),
     library: readIfExists("review-response-library.md"),
     operationalFlags: readIfExists("operational-flags.md"),

@@ -90,6 +90,7 @@ async function main() {
     ok("config: anthropic keySource=env", cfg.providers.find((p) => p.id === "anthropic")?.keySource === "env");
     ok("config: active is anthropic", cfg.active === "anthropic");
     ok("config: openai not configured yet", cfg.providers.find((p) => p.id === "openai")?.configured === false);
+    ok("config: editable case library exposed", Array.isArray(cfg.cases) && cfg.cases.length === 22 && cfg.cases[0].name === "Wordless Star" && cfg.cases.every((c) => c.name && c.family && c.approval));
     ok("config: never leaks a full key", !JSON.stringify(cfg).includes("test-key"));
 
     // generate on the active (anthropic) provider
@@ -110,11 +111,16 @@ async function main() {
     ok("v2 prompt: owner + FTC constraint present", /Kira/.test(sys) && /FTC Consumer Review Rule/.test(sys));
     ok("v2 prompt: new output fields in contract", /approval_level/.test(sys) && /left_out/.test(sys) && /fragile_note/.test(sys));
     {
-      const { normalizeResult } = await import("../lib/schema.js");
+      const { normalizeResult, sanitizeCases } = await import("../lib/schema.js");
       const floored = normalizeResult({ detected_type: "Injury or Health Claim", approval_level: "auto", needs_human_review: false, options: [] });
       ok("v2 normalize: approval floored to case level", floored.approval_level === "legal" && floored.needs_human_review === true);
       const kept = normalizeResult({ detected_type: "Short Positive", approval_level: "owner", options: [] });
       ok("v2 normalize: stricter model call kept", kept.approval_level === "owner" && kept.needs_human_review === true);
+      // editable case list: a custom case's approval floor applies too
+      const custom = sanitizeCases([{ name: "Ghosted Booking", family: "Mixed & neutral", approval: "owner", trigger: "t", strategy: "s" }]);
+      const cf = normalizeResult({ detected_type: "Ghosted Booking", approval_level: "auto", options: [] }, custom);
+      ok("v2 normalize: custom case floors approval", cf.approval_level === "owner" && cf.needs_human_review === true);
+      ok("v2 sanitize: junk rows dropped, defaults applied", sanitizeCases([{ name: " X " , approval: "bogus" }, { nope: 1 }])?.length === 1 && sanitizeCases([{ name: "X", approval: "bogus" }])[0].approval === "check");
     }
 
     // add an OpenAI key via the API

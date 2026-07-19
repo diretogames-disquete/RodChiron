@@ -105,6 +105,7 @@ function handleConfig(res) {
       price_point_usd: brand.salon.price_point_usd,
     },
     technicians: (brand.technicians || []).map((t) => t.name).filter(Boolean),
+    cases: (brand.cases || []).map((c) => ({ name: c.name, family: c.family, approval: c.approval })),
     platforms: ["Google", "Yelp", "Facebook", "Other"],
     defaultCount: 3,
     active,
@@ -194,7 +195,7 @@ async function handleGenerate(req, res) {
   }
 
   sendJson(res, 200, {
-    result: normalizeResult(parsed.data),
+    result: normalizeResult(parsed.data, brand.cases),
     meta: {
       provider,
       model: result.model,

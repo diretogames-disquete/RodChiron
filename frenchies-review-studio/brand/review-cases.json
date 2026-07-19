@@ -1,0 +1,156 @@
+[
+  {
+    "name": "Wordless Star",
+    "family": "Positive",
+    "approval": "auto",
+    "trigger": "Rating only, no text",
+    "strategy": "1 line (2 absolute max). Don't thank for 'kind words' — there were none. Don't invent what they enjoyed. Use the booking-record tech name only if the owner supplied it. Vary the opener — these accumulate publicly."
+  },
+  {
+    "name": "Short Positive",
+    "family": "Positive",
+    "approval": "auto",
+    "trigger": "3–8 words of praise",
+    "strategy": "ONE sentence — match their brevity; brevity is confidence. Open by AGREEING ('She really is.'), not thanking. Named tech gets one character trait. Light see-you-next-time close, no hard sell."
+  },
+  {
+    "name": "Medium Positive",
+    "family": "Positive",
+    "approval": "auto",
+    "trigger": "2–4 sentences",
+    "strategy": "2–3 sentences. Find the SINGLE most specific detail they included and make it the spine. Quote their strongest phrase back. At most ONE light differentiator, only if their review opens the door naturally."
+  },
+  {
+    "name": "Detailed Positive",
+    "family": "Positive",
+    "approval": "auto",
+    "trigger": "Full paragraph rave",
+    "strategy": "3–4 sentences. Do NOT answer every point — pick the strongest beat (the most VALUABLE line is often not the loudest compliment). Quote their best phrase. Flag internally if testimonial-worthy (consent needed before reuse)."
+  },
+  {
+    "name": "First-Visit Convert",
+    "family": "Positive",
+    "approval": "auto",
+    "trigger": "Skeptic won over",
+    "strategy": "Match their humor if they used any. Acknowledge their real reason for coming, in their framing. CRITICAL: never spell out their demographic or say 'everyone is welcome' — that others them; let tone do the work. Don't get clinical."
+  },
+  {
+    "name": "Membership Convert",
+    "family": "Positive",
+    "approval": "check",
+    "trigger": "Mentions joining the membership",
+    "strategy": "The membership line IS the lede, even mid-paragraph. Frame it as a decision worth honoring — someone choosing this as their place. NO benefits/pricing pitch; the proof is their choice. Close as a welcome, not a thank-you."
+  },
+  {
+    "name": "Loyal Regular",
+    "family": "Positive",
+    "approval": "auto",
+    "trigger": "Long-term client",
+    "strategy": "Reply like someone who KNOWS them. Acknowledge the length of the relationship in their terms. NO rebook nudge, booking link, or membership pitch — all imply we forgot they're already here. Their regular tech pairing is central."
+  },
+  {
+    "name": "Event & Bridal",
+    "family": "Positive",
+    "approval": "auto",
+    "trigger": "Wedding, group, occasion",
+    "strategy": "Lead with the occasion, not the service. Demonstrate group/deadline competence through CALM TONE, never claims. Name every technician the reviewer named. Leave the door open for the people around them, no hard pitch."
+  },
+  {
+    "name": "Mixed Review",
+    "family": "Mixed & neutral",
+    "approval": "check",
+    "trigger": "Praise + complaint together",
+    "strategy": "Praise first, briefly. Then own the complaint plainly — BAN the pivot words 'but', 'however', 'that said', 'unfortunately'; use a full stop and a new sentence. Own with NO explanation attached (explanations read as excuses). One concrete fix or direct contact. Never defend pricing, timing, or policy here."
+  },
+  {
+    "name": "Lukewarm Middle",
+    "family": "Mixed & neutral",
+    "approval": "check",
+    "trigger": "3★, faint praise",
+    "strategy": "Do NOT over-apologize — nothing bad happened, and a heavy apology invents a problem. Do NOT interrogate publicly. Short and confident: acknowledge honestly, signal we aim higher than fine, one genuine low-pressure private invitation."
+  },
+  {
+    "name": "Silent Low Star",
+    "family": "Mixed & neutral",
+    "approval": "check",
+    "trigger": "1–2★, no text",
+    "strategy": "NEVER guess the cause or apologize for a specific unverified failure — that publicly confesses to something that may not have happened. 1–2 sentences, calm and unbothered: acknowledge the rating, genuine willingness to understand, direct contact. Written for future readers."
+  },
+  {
+    "name": "Negative – Service",
+    "family": "Negative",
+    "approval": "owner",
+    "trigger": "Quality, technique, result",
+    "strategy": "Own it plainly and early — no 'we're sorry you feel'. Do NOT explain the technique or why it happened; to a third-party reader explanation reads as excuse. Never name or imply fault of a technician publicly. One concrete remedy (come back, we'll correct it). Short; move detail offline."
+  },
+  {
+    "name": "Negative – Communication",
+    "family": "Negative",
+    "approval": "owner",
+    "trigger": "Rudeness, booking, ghosting",
+    "strategy": "Name the failure honestly — never soften it to 'any confusion'. NEVER suggest they misunderstood or overreacted. Institutional responsibility, never an individual's. State one specific change if genuinely real. Direct line to the owner. This is the one negative family where a fuller, warmer apology beats brevity."
+  },
+  {
+    "name": "Negative – Pricing",
+    "family": "Negative",
+    "approval": "owner",
+    "trigger": "Cost or value surprise",
+    "strategy": "NEVER defend the number. BANNED: 'you get what you pay for' and every variation. The value perception is legitimate — a price that felt wrong to them WAS wrong for them. ONCE, calmly, describe what the price buys (autoclave sterilization, single-use files, unhurried time) as how we work, not as rebuttal. Then stop. No refunds publicly."
+  },
+  {
+    "name": "Negative – Policy Dispute",
+    "family": "Negative",
+    "approval": "owner",
+    "trigger": "Late arrival, cancellation, fee",
+    "strategy": "NEVER say 'you were late' or 'you were wrong', even softened. State the standard by WHO IT PROTECTS: back-to-back bookings mean a late start comes out of the NEXT client's time. Use the line 'a rule I only enforce sometimes isn't fair to anybody.' Do NOT correct their timeline or numbers, quote fine print, or mention the charge/refund/cameras/texts/receipts. Open by genuinely acknowledging their disrupted day."
+  },
+  {
+    "name": "Negative – Hostile",
+    "family": "Negative",
+    "approval": "owner",
+    "trigger": "Abusive, unfair, personal",
+    "strategy": "INVERT match-the-energy: heat gets room temperature. 2–3 calm sentences max beside their angry paragraph. No grovel (reads as guilt and teaches that aggression works), no rebuttal of specific accusations, no reference to their tone. One direct contact, then stop. Advise privately whether to leave unanswered or report to the platform."
+  },
+  {
+    "name": "Injury or Health Claim",
+    "family": "Negative",
+    "approval": "legal",
+    "trigger": "Bleeding, burn, infection, reaction",
+    "strategy": "Do NOT rebut and do NOT admit fault. REOPEN as an invitation: 'I'd really like to hear more.' Offer alternative causes ONLY as possibilities that INCLUDE our own work (medications, thyroid/circulation, dry cuticles, home care), each hedged, routed to their doctor if ongoing. SCOPE LIMIT: alternative causes are credible for tenderness/bleeding/sensitivity, NOT for a burn, cut, or instrument-traced infection — there, drop the alt-causes entirely, express real concern, move private immediately. Never name the technician. Never discuss compensation."
+  },
+  {
+    "name": "Legacy Unanswered",
+    "family": "Time-shifted",
+    "approval": "check",
+    "trigger": "Old review, never replied to",
+    "strategy": "Acknowledge the lateness openly and without excuse — 'this is a late reply and that's on us.' Signal the salon has CHANGED without detailing history and WITHOUT blaming any former team member; draw a line between eras, not people. Don't re-litigate. Genuine invitation to see the difference. Short."
+  },
+  {
+    "name": "Resolved or Updated",
+    "family": "Time-shifted",
+    "approval": "check",
+    "trigger": "Complaint later fixed; updated review",
+    "strategy": "Thank them for the SECOND CHANCE specifically — that's the rare thing, and it's theirs. NO victory lap ('so glad we could turn this around' centres us). Don't re-describe the original problem. Briefly affirm the standard that should have applied the first time. Warm, short, genuinely humble."
+  },
+  {
+    "name": "Misdirected Review",
+    "family": "Edge & escalation",
+    "approval": "owner",
+    "trigger": "Meant for another business",
+    "strategy": "Tells: acrylics, jetted tubs, services/staff that don't exist here. Be gentle and leave room to be wrong: 'we think this may have been meant for another salon.' Never certain, never list their errors, never name the other business. Offer to help if it WAS us. 2 sentences max."
+  },
+  {
+    "name": "Suspicious or Fake",
+    "family": "Edge & escalation",
+    "approval": "owner",
+    "trigger": "No record of the visit",
+    "strategy": "NEVER accuse them of being fake publicly — and never threaten legal action to force removal (the FTC Consumer Review Rule prohibits groundless legal threats, intimidation, and false public accusations to remove reviews). State the absence of a record neutrally, invite direct contact, 2 sentences, unbothered. Report through the platform on factual grounds."
+  },
+  {
+    "name": "Discrimination or Harassment Claim",
+    "family": "Edge & escalation",
+    "approval": "legal",
+    "trigger": "Bias, dignity, or conduct claim",
+    "strategy": "Treat the claim as serious on its face. Never dispute their experience or defend the team's intent — 'that's not who we are' reads as dismissal. No conclusions, no findings, no timelines, no names. Move to a direct private channel with the owner immediately. Short, grave, human — NO brand-voice warmth or wit; charm reads as flippancy here."
+  }
+]
