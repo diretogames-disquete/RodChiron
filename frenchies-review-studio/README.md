@@ -21,14 +21,21 @@ comes from **editable config files**, not a model default.
 
 ## What makes it different (by design)
 
+- **Built on the Master Prompt Library v2.0.** Every review is classified into
+  one of **22 cases in 5 families** (Positive / Mixed / Negative / Time-shifted /
+  Edge), each with its own strategy and a governance **approval level**
+  (Auto / Check / Owner / Legal).
 - **Multiple genuine angles, not reworded clones.** The 2–4 options for a review
   differ in *strategy and tone* — choosing between them feels like a real decision.
 - **Voice from this business's config.** All brand rules, salon facts, technician
   notes, and approved exemplars live in `/brand` and are read at runtime.
-- **Transparent reasoning.** Every option shows a one-line "why this angle."
-- **Human-in-the-loop for sensitive cases.** Hostile reviews, legal/BBB mentions,
-  health-harm claims, unsanitary-practice accusations, and misdirected reviews
-  trigger a **"Needs owner / legal sign-off"** banner and are marked as drafts.
+- **Transparent reasoning.** Every option shows a one-line "why this angle," plus
+  a **"deliberately left out"** panel and a **fragility warning** when a passage
+  shouldn't be trimmed.
+- **Human-in-the-loop, enforced in code.** Owner- and Legal-level cases (service
+  and policy disputes, hostile reviews, injury claims, discrimination claims) are
+  always flagged for sign-off — and if the model under-calls the level, the app
+  raises it to the case's floor.
 - **Never fabricates.** No invented visit details, prices, staff names, or numbers.
   When tempted to invent, the model flags instead.
 
@@ -126,11 +133,18 @@ model, just type its id.
    to your active provider). Overriding the model here doesn't change your saved
    default; it just runs this one on, say, a cheaper model.
 4. **Generate.** You get:
-   - the **detected review type** (editable),
+   - the **detected case** (editable — one of the 22 cases below),
+   - an **approval-level chip** — **Auto** (any trained team member can post) /
+     **Check** (a second pair of eyes) / **Owner** (the owner approves personally) /
+     **Legal** (owner + counsel before a public word),
    - the technician detected,
-   - a **"Needs human review"** banner when the case is sensitive,
+   - a **"Needs owner sign-off"** banner on Owner- and Legal-level cases,
    - option **cards** — angle label, editable response, one-line rationale, live
      character count, **Copy**, and **Save as exemplar**,
+   - a **"Deliberately left out"** panel — what the drafts intentionally omit and
+     the risk each omission avoids,
+   - a **fragility warning** when a passage would read badly if trimmed (and which
+     direction *not* to edit it),
    - an **operational flags** panel (for you — not part of the public reply),
    - a **roster note** if the review named a technician not on file.
 5. **Regenerate** re-rolls fresh angles. Edit any response inline before copying.
@@ -140,6 +154,34 @@ tokens used, and an **estimated cost** — so you can compare what each provider
 costs you per review.
 
 Nothing is ever posted automatically.
+
+### The case library (v2.0) — 22 cases in 5 families
+
+The classification the app runs on comes from the **Frenchies Master Review
+Response Prompt Library v2.0**. Every review is classified into exactly one case,
+and each case carries its own strategy and minimum approval level:
+
+| Family | Cases | Doctrine |
+|---|---|---|
+| **Positive** (01–08) | Wordless Star · Short/Medium/Detailed Positive · First-Visit Convert · Membership Convert · Loyal Regular · Event & Bridal | Protect and amplify — proportion over enthusiasm. |
+| **Mixed & neutral** (09–11) | Mixed Review · Lukewarm Middle · Silent Low Star | The most winnable — graceful handling of partial criticism builds more trust than pure praise. |
+| **Negative** (12–17) | Service · Communication · Pricing · Policy Dispute · Hostile · Injury/Health Claim | Contain, don't argue — you can be completely right and still lose every reader by proving it. |
+| **Time-shifted** (18–19) | Legacy Unanswered · Resolved or Updated | Draw lines between eras, not people. |
+| **Edge & escalation** (20–22) | Misdirected · Suspicious or Fake · Discrimination/Harassment | Rare, high stakes — nobody improvises. |
+
+Two safety rails are enforced **in code**, not just in the prompt:
+
+- **The approval floor.** If the model classifies a review as, say, an Injury
+  claim but under-calls the approval level, the app raises it to the case's
+  floor (Legal) — the stricter of the two always wins.
+- **Owner/Legal ⇒ human review.** Any Owner- or Legal-level case is always
+  flagged `needs_human_review`, and its drafts are marked as drafts.
+
+The escalation ladder also tells the model to classify by the **highest-stakes
+element present** (a late-arrival rant with one line about bleeding is an Injury
+case, not a Policy case), and the Suspicious/Fake case encodes the **FTC
+Consumer Review Rule** constraint: never accuse publicly, never threaten legal
+action to force removal — report through the platform on factual grounds.
 
 ### Cost estimates
 
@@ -189,8 +231,8 @@ generation — edit a file, generate again, done:
   with `.env` fallback.
 - **System prompt** is assembled at request time by `buildSystemPrompt()`
   (`lib/buildSystemPrompt.js`) from the brand files, salon facts, technician roster,
-  review taxonomy, multi-angle logic, and the sensitive-case rules — the voice is
-  data-driven, not baked into code.
+  the 22-case library (`CASES` in `lib/schema.js`), the escalation ladder, and the
+  multi-angle logic — the voice is data-driven, not baked into code.
 - **State** is in-memory during the session (no browser storage). The only thing
   written to disk is a saved exemplar, and only when you click the button.
 
@@ -211,12 +253,15 @@ generation — edit a file, generate again, done:
 ```json
 {
   "detected_type": "Detailed Positive",
+  "approval_level": "auto",
   "technician": "Rheanna",
   "needs_human_review": false,
   "sensitivity_reason": null,
   "options": [
     { "angle": "Anchor on the key phrase", "response": "…", "rationale": "…", "char_count": 172 }
   ],
+  "left_out": [ "What the drafts deliberately omit, and the risk each omission avoids" ],
+  "fragile_note": "Which passage not to trim, and which direction not to edit — or null",
   "operational_flags": [ { "issue": "…", "severity": "low|medium|high", "note": "…" } ],
   "roster_note": null
 }

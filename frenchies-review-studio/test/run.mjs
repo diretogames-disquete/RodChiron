@@ -17,10 +17,12 @@ const ok = (name, cond, extra = "") => { if (cond) { pass++; console.log("  ✓ 
 function cannedObject(count = 3) {
   const angles = ["Anchor on the key phrase", "Differentiator-woven", "Testimonial invitation", "Take it offline"];
   return {
-    detected_type: "Detailed Positive", technician: "Rheanna", needs_human_review: false, sensitivity_reason: null,
+    detected_type: "Detailed Positive", approval_level: "auto", technician: "Rheanna",
+    needs_human_review: false, sensitivity_reason: null,
     options: Array.from({ length: count }, (_, i) => ({
       angle: angles[i], response: `Option ${i + 1}.`, rationale: `why ${i + 1}`, char_count: 9,
     })),
+    left_out: ["No invented visit details — integrity rule."], fragile_note: null,
     operational_flags: [], roster_note: null,
   };
 }
@@ -99,6 +101,21 @@ async function main() {
     ok("upstream: anthropic got correct headers", globalThis.__anthHeaders === true);
     ok("upstream: anthropic got structured schema", globalThis.__anthSchema === true);
     ok("system prompt: has salon facts + exemplar", /Frenchies Modern Nail Care/.test(globalThis.__lastSystem) && /My best ever/.test(globalThis.__lastSystem));
+
+    // v2.0 Master Prompt Library integration
+    const sys = globalThis.__lastSystem || "";
+    ok("v2 prompt: 22-case library present", /22 cases, 5 families/.test(sys) && /Wordless Star/.test(sys) && /Discrimination or Harassment Claim/.test(sys));
+    ok("v2 prompt: escalation ladder + audience frame", /escalation ladder/i.test(sys) && /~50 prospective clients/.test(sys));
+    ok("v2 prompt: policy-dispute doctrine line", /a rule I only enforce sometimes/.test(sys));
+    ok("v2 prompt: owner + FTC constraint present", /Kira/.test(sys) && /FTC Consumer Review Rule/.test(sys));
+    ok("v2 prompt: new output fields in contract", /approval_level/.test(sys) && /left_out/.test(sys) && /fragile_note/.test(sys));
+    {
+      const { normalizeResult } = await import("../lib/schema.js");
+      const floored = normalizeResult({ detected_type: "Injury or Health Claim", approval_level: "auto", needs_human_review: false, options: [] });
+      ok("v2 normalize: approval floored to case level", floored.approval_level === "legal" && floored.needs_human_review === true);
+      const kept = normalizeResult({ detected_type: "Short Positive", approval_level: "owner", options: [] });
+      ok("v2 normalize: stricter model call kept", kept.approval_level === "owner" && kept.needs_human_review === true);
+    }
 
     // add an OpenAI key via the API
     let r = await post("/api/providers/key", { provider: "openai", apiKey: "sk-openaiTESTKEY", model: "gpt-4o-mini", baseUrl: up });

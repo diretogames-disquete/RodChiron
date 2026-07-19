@@ -156,12 +156,19 @@ version has no CORS limitation — it can call any of them.)
    offline"), and **number of options** (2–4).
 3. **Run this with** — choose provider + model for this run (defaults to active).
 4. **Generate.** You get, in the results pane:
-   - the **detected review type** (editable dropdown),
+   - the **detected case** (editable dropdown — one of the 22 cases in 5
+     families from the Master Prompt Library v2.0),
+   - an **approval-level chip**: **Auto** / **Check** / **Owner** / **Legal**
+     (hover it for what each level requires — see §9),
    - the technician detected,
-   - a **"Needs owner / legal sign-off"** banner for sensitive cases (see §9),
+   - a **"Needs owner sign-off"** banner on Owner- and Legal-level cases,
    - a **usage/cost bar** (provider · model · tokens · estimated cost),
    - **option cards** — angle label, an **editable** response, a one-line
      rationale, a live character count, **Copy**, and **Save as exemplar**,
+   - a **"Deliberately left out"** panel — what the drafts intentionally omit
+     and the risk each omission avoids,
+   - a **fragility warning** when a passage would read badly if trimmed (it
+     tells you which direction *not* to edit),
    - an **operational flags** panel (internal only — not part of the reply),
    - a **roster note** if a review named a technician not on file.
 5. **Regenerate** re-rolls fresh angles. Edit any response inline before copying.
@@ -222,20 +229,32 @@ budget models**.
 
 ---
 
-## 9. Sensitive-case handling
+## 9. Approval levels & sensitive-case handling (v2.0)
 
-Before writing, the model screens the review. It sets **`needs_human_review`** and
-shows the red banner when a review involves any of:
+Every one of the 22 cases carries a minimum **approval level** — the governance
+ladder from the Master Prompt Library:
 
-- hostility / abuse,
-- a **BBB / legal / attorney / lawsuit** mention,
-- an **injury or health-harm** claim,
-- an accusation of **unsanitary** practice, or
-- a **misdirected** review (mentions services the salon doesn't offer — e.g.
-  waxing/hair — or traits inconsistent with the salon).
+| Level | Who signs off | Applies to |
+|---|---|---|
+| **Auto** | Any trained team member, after a read-through | Most positive cases (01–05, 07–08) |
+| **Check** | A second pair of eyes — usually the salon lead | Membership Convert, all Mixed & neutral, Time-shifted |
+| **Owner** | The owner personally, no exceptions | All negatives (service, communication, pricing, policy, hostile), Misdirected, Suspicious/Fake |
+| **Legal** | Owner **plus** counsel / franchise support | Injury or Health Claim, Discrimination or Harassment Claim |
 
-For these it still drafts options, but keeps them factual and calm and marks each
-card **"draft — needs review."** Never treat these as one-click safe.
+Two rails are enforced **in code**, not just in the prompt:
+
+- **The approval floor.** If the model classifies a review into a case but
+  under-calls the level, the app raises it to the case's floor — the stricter of
+  the two always wins. (The model may also *raise* a level when the content
+  demands it; that's honored.)
+- **Owner/Legal ⇒ human review.** Those cases always show the sign-off banner and
+  mark every card **"draft — needs review."** Never treat them as one-click safe.
+
+The escalation ladder also classifies by the **highest-stakes element present**
+(one line about bleeding inside a policy rant makes it an Injury case), and the
+Suspicious/Fake case encodes the **FTC Consumer Review Rule** constraint: never
+accuse a reviewer publicly and never threaten legal action to force a takedown —
+report through the platform on factual grounds.
 
 ---
 

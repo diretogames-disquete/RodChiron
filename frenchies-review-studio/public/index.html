@@ -98,9 +98,10 @@
   <section class="panel results" aria-label="Generated responses">
     <div id="resultsHead" class="resultsHead hidden">
       <div class="meta">
-        <label class="metaLabel">Detected type
+        <label class="metaLabel">Detected case
           <select id="typeSelect"></select>
         </label>
+        <span id="approvalChip" class="approval hidden" title=""></span>
         <span class="techDetected" id="techDetected"></span>
       </div>
       <button id="regenBtn" class="ghost" title="Re-roll fresh angles">↻ Regenerate</button>
@@ -111,6 +112,13 @@
     <div id="usageBar" class="usagebar hidden"></div>
 
     <div id="cards" class="cards"></div>
+
+    <div id="fragileNote" class="fragile hidden"></div>
+
+    <div id="leftOutPanel" class="leftout hidden">
+      <h3>Deliberately left out <span class="muted">(and the risk each omission avoids)</span></h3>
+      <ul id="leftOutList"></ul>
+    </div>
 
     <div id="flagsPanel" class="flags hidden">
       <h3>Operational flags <span class="muted">(for you — not part of the reply)</span></h3>

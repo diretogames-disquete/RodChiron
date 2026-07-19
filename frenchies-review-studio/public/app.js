@@ -46,6 +46,10 @@ const el = {
   humanBanner: $("#humanBanner"),
   rosterNote: $("#rosterNote"),
   cards: $("#cards"),
+  approvalChip: $("#approvalChip"),
+  fragileNote: $("#fragileNote"),
+  leftOutPanel: $("#leftOutPanel"),
+  leftOutList: $("#leftOutList"),
   flagsPanel: $("#flagsPanel"),
   flagsList: $("#flagsList"),
   placeholder: $("#placeholder"),
@@ -54,11 +58,40 @@ const el = {
   toast: $("#toast"),
 };
 
-const REVIEW_TYPES = [
-  "Wordless Star", "Short Positive", "Medium Positive", "Detailed Positive",
-  "Mixed", "Negative – Service", "Negative – Communication", "Negative – Pricing",
-  "Negative – Hostile", "Legacy Unanswered", "Resolved/Updated",
+// v2.0 case library (client copy — names/families/approvals only; the full
+// strategies live server-side in lib/schema.js and drive the prompt there).
+const CASES = [
+  { name: "Wordless Star", family: "Positive", approval: "auto" },
+  { name: "Short Positive", family: "Positive", approval: "auto" },
+  { name: "Medium Positive", family: "Positive", approval: "auto" },
+  { name: "Detailed Positive", family: "Positive", approval: "auto" },
+  { name: "First-Visit Convert", family: "Positive", approval: "auto" },
+  { name: "Membership Convert", family: "Positive", approval: "check" },
+  { name: "Loyal Regular", family: "Positive", approval: "auto" },
+  { name: "Event & Bridal", family: "Positive", approval: "auto" },
+  { name: "Mixed Review", family: "Mixed & neutral", approval: "check" },
+  { name: "Lukewarm Middle", family: "Mixed & neutral", approval: "check" },
+  { name: "Silent Low Star", family: "Mixed & neutral", approval: "check" },
+  { name: "Negative – Service", family: "Negative", approval: "owner" },
+  { name: "Negative – Communication", family: "Negative", approval: "owner" },
+  { name: "Negative – Pricing", family: "Negative", approval: "owner" },
+  { name: "Negative – Policy Dispute", family: "Negative", approval: "owner" },
+  { name: "Negative – Hostile", family: "Negative", approval: "owner" },
+  { name: "Injury or Health Claim", family: "Negative", approval: "legal" },
+  { name: "Legacy Unanswered", family: "Time-shifted", approval: "check" },
+  { name: "Resolved or Updated", family: "Time-shifted", approval: "check" },
+  { name: "Misdirected Review", family: "Edge & escalation", approval: "owner" },
+  { name: "Suspicious or Fake", family: "Edge & escalation", approval: "owner" },
+  { name: "Discrimination or Harassment Claim", family: "Edge & escalation", approval: "legal" },
 ];
+const FAMILIES = ["Positive", "Mixed & neutral", "Negative", "Time-shifted", "Edge & escalation"];
+const REVIEW_TYPES = CASES.map((c) => c.name);
+const APPROVAL_META = {
+  auto: { label: "Auto", desc: "Any trained team member can post after a read-through." },
+  check: { label: "Check", desc: "One second pair of eyes — usually the salon lead — before posting." },
+  owner: { label: "Owner", desc: "The owner reads and approves personally. No exceptions." },
+  legal: { label: "Legal", desc: "Owner plus outside counsel or franchise support before a public word." },
+};
 
 function esc(s) {
   return String(s == null ? "" : s).replace(/[&<>"']/g, (c) =>
@@ -114,11 +147,16 @@ async function init() {
   } catch (e) {
     console.error(e);
   }
-  // review types dropdown
-  for (const t of REVIEW_TYPES) {
-    const o = document.createElement("option");
-    o.value = t; o.textContent = t;
-    el.typeSelect.appendChild(o);
+  // review cases dropdown, grouped by family
+  for (const fam of FAMILIES) {
+    const g = document.createElement("optgroup");
+    g.label = fam;
+    for (const c of CASES.filter((x) => x.family === fam)) {
+      const o = document.createElement("option");
+      o.value = c.name; o.textContent = c.name;
+      g.appendChild(o);
+    }
+    el.typeSelect.appendChild(g);
   }
   // fixtures
   try {
@@ -191,6 +229,9 @@ async function generate() {
   el.flagsPanel.classList.add("hidden");
   el.humanBanner.classList.add("hidden");
   el.rosterNote.classList.add("hidden");
+  el.approvalChip.classList.add("hidden");
+  el.fragileNote.classList.add("hidden");
+  el.leftOutPanel.classList.add("hidden");
   el.usageBar.classList.add("hidden");
   el.loading.classList.remove("hidden");
   el.generateBtn.disabled = true;
@@ -243,10 +284,20 @@ function render(result, input) {
     ? `Technician: <b>${esc(result.technician)}</b>`
     : `<span class="muted">No technician named</span>`;
 
+  // approval chip
+  const lvl = APPROVAL_META[result.approval_level] ? result.approval_level : null;
+  if (lvl) {
+    el.approvalChip.className = `approval ${lvl}`;
+    el.approvalChip.textContent = APPROVAL_META[lvl].label;
+    el.approvalChip.title = APPROVAL_META[lvl].desc;
+    el.approvalChip.classList.remove("hidden");
+  }
+
   // human review banner
   if (result.needs_human_review) {
+    const who = lvl === "legal" ? "owner + counsel sign-off" : lvl === "owner" ? "owner sign-off" : "a second pair of eyes";
     el.humanBanner.innerHTML =
-      `<span>⚠</span><span><b>Needs owner / legal sign-off</b>${
+      `<span>⚠</span><span><b>Needs ${who}</b>${
         result.sensitivity_reason ? " — " + esc(result.sensitivity_reason) : ""
       }<br>These are drafts only. Read carefully and edit before anything is posted.</span>`;
     el.humanBanner.classList.remove("hidden");
@@ -298,6 +349,19 @@ function render(result, input) {
       saveExemplar(input, ta.value, el.typeSelect.value));
     el.cards.appendChild(card);
   });
+
+  // fragility warning — which passage not to trim, and which direction not to edit
+  if (result.fragile_note) {
+    el.fragileNote.innerHTML =
+      `<span>⚑</span><span><b>Fragile wording</b> — ${esc(result.fragile_note)}</span>`;
+    el.fragileNote.classList.remove("hidden");
+  }
+
+  // deliberately left out (and the risk each omission avoids)
+  if (result.left_out && result.left_out.length) {
+    el.leftOutList.innerHTML = result.left_out.map((x) => `<li>${esc(x)}</li>`).join("");
+    el.leftOutPanel.classList.remove("hidden");
+  }
 
   // flags
   if (result.operational_flags && result.operational_flags.length) {

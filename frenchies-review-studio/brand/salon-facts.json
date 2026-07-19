@@ -1,7 +1,9 @@
 {
   "name": "Frenchies Modern Nail Care",
   "city": "Winston-Salem, NC",
+  "owner": "Kira",
   "price_point_usd": 80,
+  "membership_program": true,
   "sterilization": ["autoclave", "single-use files"],
   "uses_uv_lamps": true,
   "doctor_recommended": true,

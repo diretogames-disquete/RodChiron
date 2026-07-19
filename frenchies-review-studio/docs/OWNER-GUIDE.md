@@ -152,12 +152,25 @@ These are the habits that turn "replying to reviews" into real marketing:
    "testimonial invitation" — a gracious way to ask permission to feature their
    words. Great reviews are free advertising once you have the OK to use them.
 
-7. **Let it flag the scary ones.** If a review mentions a lawyer, the BBB, an injury,
-   or looks like it was meant for a different business, you'll see a red **"needs
-   your sign-off"** banner. Take those slowly and, if needed, get a second opinion
-   before posting.
+7. **Follow the colored approval chip.** Every reply now comes with a small chip
+   that tells you who should look at it before it posts, straight from your
+   response playbook:
+   - **Auto** (green) — anyone trained on the voice can post it after a read.
+   - **Check** (amber) — have a second pair of eyes look first.
+   - **Owner** (red) — you read and approve it personally. All negatives land here.
+   - **Legal** (purple) — you *plus* counsel or franchise support. Injury and
+     discrimination claims land here. No exceptions, no same-hour posting.
+   The app enforces this: red- and purple-chip replies always carry the
+   **"needs your sign-off"** banner and are marked as drafts.
 
-8. **Keep costs tiny.** Look at the little line above the replies — it shows about
+8. **Read the "Deliberately left out" box.** Under the replies, the tool lists what
+   it *chose not to say* — no refund talk, no arguing the timeline, no naming the
+   tech in a complaint — and the risk each omission avoids. That's your playbook
+   working. If you edit a reply, don't add those things back in. And when a
+   **"fragile wording"** warning appears (it will on injury claims), it tells you
+   which passage not to trim — edit it longer, never shorter.
+
+9. **Keep costs tiny.** Look at the little line above the replies — it shows about
    how much each generation cost. For everyday replies, use a cheap model (pick it in
    **"Run this with"**); save the premium one for the tricky, high-stakes reviews.
 

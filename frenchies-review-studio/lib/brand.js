@@ -27,7 +27,7 @@ function readJsonIfExists(name, fallback) {
  * most recent `limit` (newest are appended to the end of the file by the
  * learning loop), so the house voice sharpens with use and the prompt stays lean.
  */
-export function loadExemplars(limit = 8) {
+export function loadExemplars(limit = 10) {
   const raw = readIfExists("voice-exemplars.md");
   if (!raw) return [];
   const blocks = raw

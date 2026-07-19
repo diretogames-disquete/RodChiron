@@ -140,7 +140,7 @@ PORT=3000</code></pre>
 <li><strong>Paste the review</strong> and pick a <strong>star rating</strong> (1–5).</li>
 <li>Optional: <strong>technician</strong>, <strong>platform</strong>, <strong>context notes</strong> ("regular client", "resolved offline"), and <strong>number of options</strong> (2–4).</li>
 <li><strong>Run this with</strong> — choose provider + model for this run (defaults to active).</li>
-<li><strong>Generate.</strong> The results pane shows: the detected <strong>review type</strong> (editable), the technician detected, a red <strong>"Needs owner / legal sign-off"</strong> banner for sensitive cases (§9), a <strong>usage/cost bar</strong>, <strong>option cards</strong> (angle · editable response · rationale · live char count · Copy · Save as exemplar), an <strong>operational flags</strong> panel (internal only), and a <strong>roster note</strong> if a review named an unknown tech.</li>
+<li><strong>Generate.</strong> The results pane shows: the detected <strong>case</strong> (editable — one of the 22 cases in 5 families from the Master Prompt Library v2.0), an <strong>approval-level chip</strong> (Auto / Check / Owner / Legal — hover for what each requires, see §9), the technician detected, a red <strong>"Needs owner sign-off"</strong> banner on Owner- and Legal-level cases, a <strong>usage/cost bar</strong>, <strong>option cards</strong> (angle · editable response · rationale · live char count · Copy · Save as exemplar), a <strong>"Deliberately left out"</strong> panel (what the drafts intentionally omit and the risk each omission avoids), a <strong>fragility warning</strong> when a passage shouldn't be trimmed, an <strong>operational flags</strong> panel (internal only), and a <strong>roster note</strong> if a review named an unknown tech.</li>
 <li><strong>Regenerate</strong> re-rolls fresh angles. Edit any response inline before copying.</li>
 <li>Paste your chosen reply into Google/Yelp/etc. yourself.</li>
 </ol>
@@ -174,16 +174,23 @@ PORT=3000</code></pre>
 <li><strong>To cut cost:</strong> use the Run-this-with picker to run routine replies on a cheap model (<code>gpt-4o-mini</code>, <code>gemini-1.5-flash</code>, or a budget OpenRouter model) and reserve a premium model for tricky ones.</li>
 </ul>
 
-<h2>9. Sensitive-case handling</h2>
-<p>Before writing, the model screens the review. It sets <code>needs_human_review</code> and shows the red banner when a review involves any of:</p>
+<h2>9. Approval levels &amp; sensitive-case handling (v2.0)</h2>
+<p>Every one of the 22 cases carries a minimum <strong>approval level</strong> — the governance ladder from the Master Prompt Library:</p>
+<table>
+<thead><tr><th>Level</th><th>Who signs off</th><th>Applies to</th></tr></thead>
+<tbody>
+<tr><td><strong>Auto</strong></td><td>Any trained team member, after a read-through</td><td>Most positive cases (01–05, 07–08)</td></tr>
+<tr><td><strong>Check</strong></td><td>A second pair of eyes — usually the salon lead</td><td>Membership Convert, all Mixed &amp; neutral, Time-shifted</td></tr>
+<tr><td><strong>Owner</strong></td><td>The owner personally, no exceptions</td><td>All negatives (service, communication, pricing, policy, hostile), Misdirected, Suspicious/Fake</td></tr>
+<tr><td><strong>Legal</strong></td><td>Owner <strong>plus</strong> counsel / franchise support</td><td>Injury or Health Claim, Discrimination or Harassment Claim</td></tr>
+</tbody>
+</table>
+<p>Two rails are enforced <strong>in code</strong>, not just in the prompt:</p>
 <ul>
-<li>hostility / abuse,</li>
-<li>a <strong>BBB / legal / attorney / lawsuit</strong> mention,</li>
-<li>an <strong>injury or health-harm</strong> claim,</li>
-<li>an accusation of <strong>unsanitary</strong> practice, or</li>
-<li>a <strong>misdirected</strong> review (mentions services the salon doesn't offer, or traits inconsistent with the salon).</li>
+<li><strong>The approval floor.</strong> If the model classifies a review into a case but under-calls the level, the app raises it to the case's floor — the stricter of the two always wins. (The model may also <em>raise</em> a level when the content demands it; that's honored.)</li>
+<li><strong>Owner/Legal ⇒ human review.</strong> Those cases always show the sign-off banner and mark every card <strong>"draft — needs review."</strong> Never treat them as one-click safe.</li>
 </ul>
-<p>For these it still drafts options, but keeps them factual and calm and marks each card <strong>"draft — needs review."</strong> Never treat these as one-click safe.</p>
+<p>The escalation ladder also classifies by the <strong>highest-stakes element present</strong> (one line about bleeding inside a policy rant makes it an Injury case), and the Suspicious/Fake case encodes the <strong>FTC Consumer Review Rule</strong> constraint: never accuse a reviewer publicly and never threaten legal action to force a takedown — report through the platform on factual grounds.</p>
 
 <h2>10. Data, privacy &amp; backups</h2>
 <ul>

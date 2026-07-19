@@ -1,56 +1,56 @@
-# Review Response Library — patterns & opener banks
+# Review Response Library — patterns & opener banks (v2.0)
 
 Editable playbook the model consults for structure and for opener rotation.
-The app injects this file into the system prompt when present.
+The app injects this file into the system prompt when present. The full 22-case
+taxonomy (triggers, approval levels, per-case strategy) lives in the app's case
+library and is injected separately — this file carries the *moves*.
 
 ## Opener rotation bank (never reuse the same opener across a review's options)
 
-React to the reviewer's words. Rotate among these *moves* (not fixed phrases):
+Openers are where automation shows first. Never use the same move twice in a
+row across published replies. React to the reviewer's words; rotate among these
+*moves* (not fixed phrases):
 
-- **Agree with them** — "She really is." / "It does, doesn't it."
-- **Quote their strongest phrase** — "\"My best ever\" is a high bar…"
-- **Zero in on one word** — "Clean listed first —"
-- **Play along with their framing** — "Coming in \"for him\" —"
-- **Name the feeling** — "That relief when a pedicure actually *lasts* —"
+- **Agree-and-echo** — "She really is." / "It does, doesn't it."
+- **Quote-back** — "\"My best ever\" is a high bar…"
+- **Notice-the-detail** — "Clean listed first —"
+- **Play-along** — "Coming in \"for him\" —"
+- **Plain-warmth** — "I hate that your day ended this way."
+- **Direct-address** — "I'm sorry. Whatever the details…"
 - **Own it plainly (negatives)** — "You're right, and that's on us."
-- **Mark the era (legacy)** — "This is an old one, and a lot has changed since."
+- **Mark the era (legacy)** — "This is a late reply, and that's on us."
 
-## Response patterns by review type
+## Multi-angle menus by family (how the options should differ)
 
-- **Wordless Star** — one warm line; add the tech name if known. No pitch.
-- **Short Positive** — one sentence; match the brevity; agree, don't thank.
-- **Medium Positive** — 2–3 sentences; anchor on the strongest phrase; optional
-  light rebook or tech shout-out.
-- **Detailed Positive** — 3–4 sentences; quote the key phrase; give the named tech
-  a trait; one light differentiator aside at most.
-- **Mixed** — address both, praise first, own the fair part, never defend price;
-  offer to make it right offline.
-- **Negative – Service / Communication** — short, own what's fair, one concrete
-  corrective step, invite them back; take specifics offline. Flag for human review.
-- **Negative – Pricing** — acknowledge the value perception; you may explain what
-  the care includes (sterilization, single-use files, natural-nail focus) as *why
-  we do it this way*, never as "you get what you pay for," and never defend the
-  number.
-- **Legacy Unanswered** — signal you're responding late and that the salon has
-  changed; thank them for their patience.
-- **Resolved / Updated** — honor the arc from problem to fix; thank them for
-  giving you the chance.
+- **Positive (cases 01–08)** → (A) anchor on their strongest phrase or specific
+  detail · (B) technician-forward, leaning on the named tech's archetype ·
+  (C) light rebook nudge or testimonial invitation where the case allows it.
+  Exceptions the cases enforce: Loyal Regular gets NO sales ask of any kind;
+  Membership Convert leads with the joining decision; First-Visit Convert never
+  names the demographic.
+- **Mixed & neutral (09–11)** → (A) praise-first then own-and-fix · (B) concise
+  acknowledgement + move to a private channel · (C) "this isn't our standard" +
+  genuine invitation to make it right. All own the complaint plainly — no pivot
+  words ("but", "however", "that said", "unfortunately"), no explanations, and
+  none defend price, timing, or policy.
+- **Negative (12–17)** → (A) full accountability + one concrete corrective step ·
+  (B) brief + take it offline · (C) "not the standard we hold" + invitation to
+  return. Hostile inverts match-the-energy (2–3 room-temperature sentences);
+  Policy Dispute frames the rule by who it protects; Injury reopens as an
+  invitation with hedged, doctor-routed possibilities. All Owner- or Legal-level.
+- **Time-shifted (18–19)** → angles differ in how strongly they signal change
+  (legacy) vs. gratitude for the second chance (resolved). Never a victory lap.
+- **Edge & escalation (20–22)** → all conservative. Misdirected stays gentle and
+  uncertain; Suspicious states the absence of a record neutrally (never a public
+  accusation — FTC constraint); Discrimination is short, grave, and human, with
+  no warmth or wit, and moves private immediately.
 
-## Multi-angle strategy (how the options should differ)
+## The doctrine, in one line per family
 
-- **Short / Medium Positive** → (A) warm mirror that matches brevity · (B)
-  technician-forward, leaning on the named tech's archetype · (C) light rebook
-  nudge, or a testimonial invitation if the praise is strong.
-- **Detailed Positive** → (A) anchor-on-the-key-phrase · (B) differentiator-woven
-  (used lightly) · (C) testimonial-invitation (for standout raves — note to get
-  consent before using their words in marketing).
-- **Mixed** → (A) praise-first then own-and-fix · (B) concise acknowledge + move
-  to a private channel · (C) "this isn't our standard" + a genuine invitation to
-  make it right. All three own the complaint; none defend price.
-- **Negative – Service / Communication** → (A) full accountability + one concrete
-  corrective step · (B) brief + take it offline · (C) "not the standard we hold" +
-  invitation to return. All flagged for human review.
-- **Negative – Pricing** → angles differ in how they frame value; reference the
-  care carefully, never defensively.
-- **Legacy / Resolved** → angles differ in how strongly they signal change vs.
-  thank-for-patience.
+- Positive: **protect and amplify** — proportion over enthusiasm.
+- Mixed: **the most winnable** — a business seen handling partial criticism
+  gracefully earns more trust than one that only ever gets praise.
+- Negative: **contain, don't argue** — hold the line privately, look gracious
+  publicly. You can be completely right and still lose every reader by proving it.
+- Time-shifted: **draw lines between eras, not people.**
+- Edge: **rare, high stakes — nobody improvises.**

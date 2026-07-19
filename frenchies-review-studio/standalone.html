@@ -122,6 +122,17 @@ input:focus, select:focus, textarea:focus, button:focus-visible { outline: 2px s
 .banner { border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; font-size: 13.5px; display: flex; gap: 10px; align-items: flex-start; background: var(--crit-bg); color: var(--crit); border: 1px solid color-mix(in srgb, var(--crit) 30%, transparent); }
 .banner b { display: block; }
 .rosterNote { border-radius: 10px; padding: 10px 14px; margin-bottom: 14px; font-size: 13px; background: var(--warn-bg); color: var(--warn); border: 1px solid color-mix(in srgb, var(--warn) 30%, transparent); }
+.approval { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; padding: 4px 9px; border-radius: 20px; white-space: nowrap; cursor: help; }
+.approval.auto { background: var(--good-bg); color: var(--good); }
+.approval.check { background: var(--warn-bg); color: var(--warn); }
+.approval.owner { background: var(--crit-bg); color: var(--crit); }
+.approval.legal { background: #efe6f7; color: #7a4a9d; }
+.fragile { border-radius: 10px; padding: 12px 14px; margin-top: 14px; font-size: 13px; display: flex; gap: 10px; align-items: flex-start; background: var(--warn-bg); color: var(--warn); border: 1px dashed color-mix(in srgb, var(--warn) 45%, transparent); }
+.leftout { margin-top: 18px; border-top: 1px dashed var(--line-strong); padding-top: 16px; }
+.leftout h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-2); margin-bottom: 10px; }
+.leftout .muted { color: var(--muted); text-transform: none; letter-spacing: 0; font-weight: 500; }
+.leftout ul { margin: 0; padding-left: 20px; }
+.leftout li { font-size: 13.5px; color: var(--ink-2); padding: 3px 0; }
 .cards { display: flex; flex-direction: column; gap: 14px; }
 .card { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); overflow: hidden; }
 .card.flagged { border-color: color-mix(in srgb, var(--crit) 35%, var(--line)); }
@@ -228,7 +239,8 @@ input:focus, select:focus, textarea:focus, button:focus-visible { outline: 2px s
   <section class="panel results" aria-label="Generated responses">
     <div id="resultsHead" class="resultsHead hidden">
       <div class="meta">
-        <label class="metaLabel">Detected type <select id="typeSelect"></select></label>
+        <label class="metaLabel">Detected case <select id="typeSelect"></select></label>
+        <span id="approvalChip" class="approval hidden" title=""></span>
         <span class="techDetected" id="techDetected"></span>
       </div>
       <button id="regenBtn" class="ghost">↻ Regenerate</button>
@@ -237,6 +249,11 @@ input:focus, select:focus, textarea:focus, button:focus-visible { outline: 2px s
     <div id="rosterNote" class="rosterNote hidden"></div>
     <div id="usageBar" class="usagebar hidden"></div>
     <div id="cards" class="cards"></div>
+    <div id="fragileNote" class="fragile hidden"></div>
+    <div id="leftOutPanel" class="leftout hidden">
+      <h3>Deliberately left out <span class="muted">(and the risk each omission avoids)</span></h3>
+      <ul id="leftOutList"></ul>
+    </div>
     <div id="flagsPanel" class="flags hidden">
       <h3>Operational flags <span class="muted">(for you — not part of the reply)</span></h3>
       <div id="flagsList"></div>
@@ -308,8 +325,8 @@ input:focus, select:focus, textarea:focus, button:focus-visible { outline: 2px s
 /* ---------------- Embedded brand config (edit here to change the voice) ---- */
 const BRAND_DEFAULT = {
   salon: {
-    name: "Frenchies Modern Nail Care", city: "Winston-Salem, NC", price_point_usd: 80,
-    sterilization: ["autoclave", "single-use files"], uses_uv_lamps: true, doctor_recommended: true,
+    name: "Frenchies Modern Nail Care", city: "Winston-Salem, NC", owner: "Kira", price_point_usd: 80,
+    membership_program: true, sterilization: ["autoclave", "single-use files"], uses_uv_lamps: true, doctor_recommended: true,
     no_acrylics: true, no_jetted_tubs: true, low_odor: true, signoff: "— The Frenchies Team",
   },
   technicians: [
@@ -337,7 +354,9 @@ const BRAND_DEFAULT = {
 
 The sound: open by reacting to the reviewer's own words (never "Thank you for your feedback"); quote their strongest phrase; give the tech a character trait, not a generic compliment; let differentiators be quiet asides, never lectures; stay human and faintly witty; protect the reviewer's dignity — say less.
 
-Hard never: no gratitude clichés ("Thank you for your kind words!", "We appreciate your feedback!"); no competitor comparisons/attacks; no unsupported health claims; no invented details/prices/staff/numbers.`,
+The never-say list (v2.0): "Thank you for your feedback!" (react to their words instead) · "We're sorry you feel that way" (a non-apology — readers recognize it) · "You get what you pay for" and every variation · "However"/"but"/"that said"/"unfortunately" in a mixed reply (full stop, new sentence instead) · "Our records show…" (starts an argument the reader won't referee fairly) · naming a technician in a complaint reply · any mention of charges or refunds · cameras, texts, receipts, footage · naming or comparing competitors · absolute medical claims (soften, hedge, route to their doctor).
+
+Sign-off: the team sign-off is optional — never staple it onto every reply. On Owner- and Legal-level cases (negatives, disputes, injuries), signing personally from the owner ("— Kira") usually lands better: it shows the person accountable actually read it.`,
   exemplars: [
     `## Exemplar 1 — Short positive, technician named
 > Review (5★): "Love my mani! Amber is fab!"
@@ -355,17 +374,30 @@ Hard never: no gratitude clichés ("Thank you for your kind words!", "We appreci
 > Review (5★): "I'm a 72-year-old guy and it's getting harder to trim my toenails. Frenchies was recommended for my father-in-law but I thought I would go ahead 'for him.' It was worth it. I'll be back."
 > Response: "Coming in \\"for him\\" — your secret's safe with us. Honestly, this is exactly the kind of care that gets harder to do for yourself and shouldn't have to be, so we're glad you talked yourself into it. \\"I'll be back\\" might be our favorite three words in any review — see you then."
 > Moves: plays along with the joke; acknowledges his real reason without leaning on age or turning clinical; keeps his dignity intact.`,
+    `## Exemplar 5 — Membership convert: the joining line is the lede
+> Review (5★): "…The facility is cleaner than clean! …I became a member afterwards… Amber took care of me and she's amazing!"
+> Response: "\\"Cleaner than clean\\" might be the highest compliment we know how to earn — that one means the most to us. What really makes our day, though, is that you walked out a member: that's someone deciding on day one that this is their place, and we don't take it lightly. Amber will be so glad she was the one who showed you. Welcome in — we've got you from here."
+> Moves: the membership decision outranks louder compliments and takes the lede; no benefits pitch; Amber gets a warm supporting beat; closes as a welcome, not a thank-you.`,
+    `## Exemplar 6 — Policy dispute: who the rule protects
+> Review (1★): "I made it to my appointment, walking in at 3:05… She then told me I was nearly 20 minutes late… and that it had already been canceled… Completely ruined my wellness day."
+> Response: "Thank you for taking the time to write, and I'm sorry your day was disrupted — that's genuinely not how I want anyone to leave here. On the timing: our arrival window is short by design, and I want to be honest about why. Every appointment is booked back to back, and when one start slides, it doesn't just shorten that service — it pushes into the appointment of the client sitting in our lobby who arrived on time. Protecting her afternoon is the same standard that protects yours when you're the one on time. That window is posted in the salon and shown at booking, and I do hold to it, because a rule I only enforce sometimes isn't fair to anybody. My door's open if you'd like to talk it through. — Kira"
+> Moves: never says "you were late"; frames the rule by who it protects (the next client); no timeline correction, no fine print, no charge talk; owner signs personally.`,
+    `## Exemplar 7 — Injury claim: the nail-bed paragraph (fragile — edit longer, not shorter)
+> Review (2★, excerpt): "…the stylist made my nail bed bleed and burned another nail in the process."
+> Response (health passage): "On your earlier visit — I'd really like to hear more. Nail beds can become tender or bleed for a number of reasons that aren't always about technique: certain medications, thyroid or circulation conditions, very dry or overworked cuticles, or how the nails are cared for between visits. That's not me dismissing what you felt, it's me saying I'd want to look at it properly with you and with your doctor if it's ongoing, because we build our whole approach around the health of the natural nail."
+> Moves: reopens as an invitation; alternative causes include our own work; every cause hedged; routes to the doctor; lands on the philosophy. Fragility: trimmed short it reads as blame-shifting — edit longer, never shorter. Scope: fits tenderness/bleeding, never a burn/cut/instrument infection.`,
   ],
-  library: `# Response library
-Opener rotation (never reuse the same opener across a review's options): agree with them; quote their strongest phrase; zero in on one word; play along with their framing; name the feeling; own it plainly (negatives); mark the era (legacy).
+  library: `# Response library (v2.0)
+Opener rotation bank — openers are where automation shows first; never reuse the same move twice in a row: agree-and-echo ("She really is.") · quote-back ("'My best ever' is a high bar.") · notice-the-detail ("Clean listed first —") · play-along ("Coming in 'for him' —") · plain-warmth ("I hate that your day ended this way.") · direct-address ("I'm sorry. Whatever the details…") · own-it-plainly (negatives) · mark-the-era (legacy).
 
-Multi-angle strategy:
-- Short/Medium Positive → (A) warm mirror matching brevity · (B) technician-forward, leaning on the named tech's archetype · (C) light rebook nudge, or a testimonial invitation if praise is strong.
-- Detailed Positive → (A) anchor-on-the-key-phrase · (B) differentiator-woven (light) · (C) testimonial-invitation (note: get consent before using their words in marketing).
-- Mixed → (A) praise-first then own-and-fix · (B) concise acknowledge + move to a private channel · (C) "this isn't our standard" + genuine invitation to make it right. All own the complaint; none defend price.
-- Negative – Service/Communication → (A) full accountability + one concrete corrective step · (B) brief + take it offline · (C) "not the standard we hold" + invitation to return. All flagged for human review.
-- Negative – Pricing → angles differ in how they frame value; reference the care carefully, never defensively, never "you get what you pay for."
-- Legacy/Resolved → angles differ in how strongly they signal change vs. thank-for-patience.`,
+Multi-angle menus by family:
+- Positive (01–08) → (A) anchor on their strongest phrase/detail · (B) technician-forward · (C) light rebook or testimonial invitation where the case allows. Exceptions the cases enforce: Loyal Regular gets NO sales ask; Membership Convert leads with the joining decision; First-Visit Convert never names the demographic.
+- Mixed & neutral (09–11) → (A) praise-first then own-and-fix · (B) concise acknowledgement + private channel · (C) "this isn't our standard" + genuine invitation. All own the complaint plainly — no pivot words, no explanations; none defend price/timing/policy.
+- Negative (12–17) → (A) full accountability + one concrete corrective step · (B) brief + take it offline · (C) "not the standard we hold" + invitation to return. Hostile inverts match-the-energy; Policy Dispute frames the rule by who it protects; Injury reopens as an invitation with hedged, doctor-routed possibilities.
+- Time-shifted (18–19) → angles differ in signaling change (legacy) vs. gratitude for the second chance (resolved). Never a victory lap.
+- Edge (20–22) → all conservative: gentle-and-uncertain (misdirected), neutral no-record statement (suspicious — never a public accusation, per the FTC Consumer Review Rule), short and grave with no wit (discrimination).
+
+Doctrine per family: Positive = protect and amplify. Mixed = the most winnable. Negative = contain, don't argue — you can be completely right and still lose every reader by proving it. Time-shifted = draw lines between eras, not people. Edge = rare, high stakes — nobody improvises.`,
   operationalFlags: `# Operational flags (internal only). Severity low/medium/high.
 - Extension/enhancement durability (polish/gel/dip lifting early) — low–medium
 - Service completeness (steps skipped/rushed) — medium
@@ -392,17 +424,61 @@ const PROVIDERS = [
   { id: "openai_compatible", label: "OpenAI-compatible (OpenRouter, Groq, DeepSeek, local…)", defaultBaseUrl: "", defaultModel: "", models: [], needsBaseUrl: true, keyHint: "provider key", baseUrlHint: "https://openrouter.ai/api/v1", modelHint: "e.g. openai/gpt-4o-mini", docs: "https://openrouter.ai/keys", browserOk: true },
 ];
 
+/* The v2.0 case library — 22 cases in 5 families, from the Master Review
+   Response Prompt Library. Each case carries its minimum approval level and a
+   condensed strategy that drives the system prompt. */
+const APPROVAL_LEVELS = {
+  auto: { label: "Auto", rank: 0, desc: "Any trained team member can post after a read-through." },
+  check: { label: "Check", rank: 1, desc: "One second pair of eyes — usually the salon lead — before posting." },
+  owner: { label: "Owner", rank: 2, desc: "The owner reads and approves personally. No exceptions." },
+  legal: { label: "Legal", rank: 3, desc: "Owner plus outside counsel or franchise support before a public word." },
+};
+const FAMILIES = ["Positive","Mixed & neutral","Negative","Time-shifted","Edge & escalation"];
+const CASES = [
+  { n: 1, name: "Wordless Star", family: "Positive", approval: "auto", trigger: "Rating only, no text", strategy: "1 line (2 absolute max). Don't thank for 'kind words' — there were none. Don't invent what they enjoyed. Use the booking-record tech name only if the owner supplied it. Vary the opener — these accumulate publicly." },
+  { n: 2, name: "Short Positive", family: "Positive", approval: "auto", trigger: "3–8 words of praise", strategy: "ONE sentence — match their brevity; brevity is confidence. Open by AGREEING ('She really is.'), not thanking. Named tech gets one character trait. Light see-you-next-time close, no hard sell." },
+  { n: 3, name: "Medium Positive", family: "Positive", approval: "auto", trigger: "2–4 sentences", strategy: "2–3 sentences. Find the SINGLE most specific detail they included and make it the spine. Quote their strongest phrase back. At most ONE light differentiator, only if their review opens the door naturally." },
+  { n: 4, name: "Detailed Positive", family: "Positive", approval: "auto", trigger: "Full paragraph rave", strategy: "3–4 sentences. Do NOT answer every point — pick the strongest beat (the most VALUABLE line is often not the loudest compliment). Quote their best phrase. Flag internally if testimonial-worthy (consent needed before reuse)." },
+  { n: 5, name: "First-Visit Convert", family: "Positive", approval: "auto", trigger: "Skeptic won over", strategy: "Match their humor if they used any. Acknowledge their real reason for coming, in their framing. CRITICAL: never spell out their demographic or say 'everyone is welcome' — that others them; let tone do the work. Don't get clinical." },
+  { n: 6, name: "Membership Convert", family: "Positive", approval: "check", trigger: "Mentions joining the membership", strategy: "The membership line IS the lede, even mid-paragraph. Frame it as a decision worth honoring — someone choosing this as their place. NO benefits/pricing pitch; the proof is their choice. Close as a welcome, not a thank-you." },
+  { n: 7, name: "Loyal Regular", family: "Positive", approval: "auto", trigger: "Long-term client", strategy: "Reply like someone who KNOWS them. Acknowledge the length of the relationship in their terms. NO rebook nudge, booking link, or membership pitch — all imply we forgot they're already here. Their regular tech pairing is central." },
+  { n: 8, name: "Event & Bridal", family: "Positive", approval: "auto", trigger: "Wedding, group, occasion", strategy: "Lead with the occasion, not the service. Demonstrate group/deadline competence through CALM TONE, never claims. Name every technician the reviewer named. Leave the door open for the people around them, no hard pitch." },
+  { n: 9, name: "Mixed Review", family: "Mixed & neutral", approval: "check", trigger: "Praise + complaint together", strategy: "Praise first, briefly. Then own the complaint plainly — BAN the pivot words 'but', 'however', 'that said', 'unfortunately'; use a full stop and a new sentence. Own with NO explanation attached (explanations read as excuses). One concrete fix or direct contact. Never defend pricing, timing, or policy here." },
+  { n: 10, name: "Lukewarm Middle", family: "Mixed & neutral", approval: "check", trigger: "3★, faint praise", strategy: "Do NOT over-apologize — nothing bad happened, and a heavy apology invents a problem. Do NOT interrogate publicly. Short and confident: acknowledge honestly, signal we aim higher than fine, one genuine low-pressure private invitation." },
+  { n: 11, name: "Silent Low Star", family: "Mixed & neutral", approval: "check", trigger: "1–2★, no text", strategy: "NEVER guess the cause or apologize for a specific unverified failure — that publicly confesses to something that may not have happened. 1–2 sentences, calm and unbothered: acknowledge the rating, genuine willingness to understand, direct contact. Written for future readers." },
+  { n: 12, name: "Negative – Service", family: "Negative", approval: "owner", trigger: "Quality, technique, result", strategy: "Own it plainly and early — no 'we're sorry you feel'. Do NOT explain the technique or why it happened; to a third-party reader explanation reads as excuse. Never name or imply fault of a technician publicly. One concrete remedy (come back, we'll correct it). Short; move detail offline." },
+  { n: 13, name: "Negative – Communication", family: "Negative", approval: "owner", trigger: "Rudeness, booking, ghosting", strategy: "Name the failure honestly — never soften it to 'any confusion'. NEVER suggest they misunderstood or overreacted. Institutional responsibility, never an individual's. State one specific change if genuinely real. Direct line to the owner. This is the one negative family where a fuller, warmer apology beats brevity." },
+  { n: 14, name: "Negative – Pricing", family: "Negative", approval: "owner", trigger: "Cost or value surprise", strategy: "NEVER defend the number. BANNED: 'you get what you pay for' and every variation. The value perception is legitimate — a price that felt wrong to them WAS wrong for them. ONCE, calmly, describe what the price buys (autoclave sterilization, single-use files, unhurried time) as how we work, not as rebuttal. Then stop. No refunds publicly." },
+  { n: 15, name: "Negative – Policy Dispute", family: "Negative", approval: "owner", trigger: "Late arrival, cancellation, fee", strategy: "NEVER say 'you were late' or 'you were wrong', even softened. State the standard by WHO IT PROTECTS: back-to-back bookings mean a late start comes out of the NEXT client's time. Use the line 'a rule I only enforce sometimes isn't fair to anybody.' Do NOT correct their timeline or numbers, quote fine print, or mention the charge/refund/cameras/texts/receipts. Open by genuinely acknowledging their disrupted day." },
+  { n: 16, name: "Negative – Hostile", family: "Negative", approval: "owner", trigger: "Abusive, unfair, personal", strategy: "INVERT match-the-energy: heat gets room temperature. 2–3 calm sentences max beside their angry paragraph. No grovel (reads as guilt and teaches that aggression works), no rebuttal of specific accusations, no reference to their tone. One direct contact, then stop. Advise privately whether to leave unanswered or report to the platform." },
+  { n: 17, name: "Injury or Health Claim", family: "Negative", approval: "legal", trigger: "Bleeding, burn, infection, reaction", strategy: "Do NOT rebut and do NOT admit fault. REOPEN as an invitation: 'I'd really like to hear more.' Offer alternative causes ONLY as possibilities that INCLUDE our own work (medications, thyroid/circulation, dry cuticles, home care), each hedged, routed to their doctor if ongoing. SCOPE LIMIT: alternative causes are credible for tenderness/bleeding/sensitivity, NOT for a burn, cut, or instrument-traced infection — there, drop the alt-causes entirely, express real concern, move private immediately. Never name the technician. Never discuss compensation." },
+  { n: 18, name: "Legacy Unanswered", family: "Time-shifted", approval: "check", trigger: "Old review, never replied to", strategy: "Acknowledge the lateness openly and without excuse — 'this is a late reply and that's on us.' Signal the salon has CHANGED without detailing history and WITHOUT blaming any former team member; draw a line between eras, not people. Don't re-litigate. Genuine invitation to see the difference. Short." },
+  { n: 19, name: "Resolved or Updated", family: "Time-shifted", approval: "check", trigger: "Complaint later fixed; updated review", strategy: "Thank them for the SECOND CHANCE specifically — that's the rare thing, and it's theirs. NO victory lap ('so glad we could turn this around' centres us). Don't re-describe the original problem. Briefly affirm the standard that should have applied the first time. Warm, short, genuinely humble." },
+  { n: 20, name: "Misdirected Review", family: "Edge & escalation", approval: "owner", trigger: "Meant for another business", strategy: "Tells: acrylics, jetted tubs, services/staff that don't exist here. Be gentle and leave room to be wrong: 'we think this may have been meant for another salon.' Never certain, never list their errors, never name the other business. Offer to help if it WAS us. 2 sentences max." },
+  { n: 21, name: "Suspicious or Fake", family: "Edge & escalation", approval: "owner", trigger: "No record of the visit", strategy: "NEVER accuse them of being fake publicly — and never threaten legal action to force removal (the FTC Consumer Review Rule prohibits groundless legal threats, intimidation, and false public accusations to remove reviews). State the absence of a record neutrally, invite direct contact, 2 sentences, unbothered. Report through the platform on factual grounds." },
+  { n: 22, name: "Discrimination or Harassment Claim", family: "Edge & escalation", approval: "legal", trigger: "Bias, dignity, or conduct claim", strategy: "Treat the claim as serious on its face. Never dispute their experience or defend the team's intent — 'that's not who we are' reads as dismissal. No conclusions, no findings, no timelines, no names. Move to a direct private channel with the owner immediately. Short, grave, human — NO brand-voice warmth or wit; charm reads as flippancy here." },
+];
+const REVIEW_TYPES = CASES.map((c) => c.name);
+function caseByName(name) { if (typeof name !== "string") return null; const t = name.trim().toLowerCase(); return CASES.find((c) => c.name.toLowerCase() === t) || null; }
+function effectiveApproval(detectedType, modelLevel) {
+  const c = caseByName(detectedType); const floor = c ? c.approval : "check";
+  const m = typeof modelLevel === "string" && APPROVAL_LEVELS[modelLevel] ? modelLevel : "check";
+  return APPROVAL_LEVELS[m].rank >= APPROVAL_LEVELS[floor].rank ? m : floor;
+}
+
 const OUTPUT_SCHEMA = {
   type: "object", additionalProperties: false,
   properties: {
-    detected_type: { type: "string" }, technician: { type: ["string","null"] }, needs_human_review: { type: "boolean" }, sensitivity_reason: { type: ["string","null"] },
+    detected_type: { type: "string" }, approval_level: { type: "string", enum: ["auto","check","owner","legal"] },
+    technician: { type: ["string","null"] }, needs_human_review: { type: "boolean" }, sensitivity_reason: { type: ["string","null"] },
     options: { type: "array", items: { type: "object", additionalProperties: false, properties: { angle: { type: "string" }, response: { type: "string" }, rationale: { type: "string" }, char_count: { type: "integer" } }, required: ["angle","response","rationale","char_count"] } },
+    left_out: { type: "array", items: { type: "string" } },
+    fragile_note: { type: ["string","null"] },
     operational_flags: { type: "array", items: { type: "object", additionalProperties: false, properties: { issue: { type: "string" }, severity: { type: "string", enum: ["low","medium","high"] }, note: { type: "string" } }, required: ["issue","severity","note"] } },
     roster_note: { type: ["string","null"] },
   },
-  required: ["detected_type","technician","needs_human_review","sensitivity_reason","options","operational_flags","roster_note"],
+  required: ["detected_type","approval_level","technician","needs_human_review","sensitivity_reason","options","left_out","fragile_note","operational_flags","roster_note"],
 };
-const REVIEW_TYPES = ["Wordless Star","Short Positive","Medium Positive","Detailed Positive","Mixed","Negative – Service","Negative – Communication","Negative – Pricing","Negative – Hostile","Legacy Unanswered","Resolved/Updated"];
 
 const FIXTURES = [
   { label: "1 · Short positive, names Amber", review: "Love my mani! Amber is fab!", rating: 5, technician: "Amber", platform: "Google" },
@@ -412,6 +488,10 @@ const FIXTURES = [
   { label: "5 · Pricing complaint ($80 mani)", review: "$80 for a mani is steep. It looked nice but I don't think I'll be back at that price.", rating: 3, technician: "", platform: "Yelp" },
   { label: "6 · Hostile / BBB mention", review: "WORST experience of my life. The staff were rude and dismissive and I felt disrespected the entire time. I am filing a complaint with the BBB and telling everyone I know to stay away.", rating: 1, technician: "", platform: "Google" },
   { label: "7 · Misdirected (waxing / male front-desk)", review: "Booked a Brazilian wax and the guy at the front desk was super unprofessional. The waxing room wasn't ready and I waited 40 minutes. Never coming back for a wax here.", rating: 2, technician: "", platform: "Facebook" },
+  { label: "8 · Membership convert (joining is the lede)", review: "First time here and honestly the facility is cleaner than clean! The pedicure was so relaxing I became a member afterwards. Amber took care of me and she's amazing!", rating: 5, technician: "Amber", platform: "Google" },
+  { label: "9 · Policy dispute (late arrival, canceled)", review: "I made it to my appointment, walking in at 3:05. She then told me I was nearly 20 minutes late and that it had already been canceled. Completely ruined my wellness day.", rating: 1, technician: "", platform: "Google", context: "Booked 2:50, arrived 3:07 per desk log. 15-min grace window is posted at booking and in the salon. Next client was on time." },
+  { label: "10 · Silent 1-star (no text)", review: "", rating: 1, technician: "", platform: "Google" },
+  { label: "11 · Mixed (great pedi, 25-min wait)", review: "The pedicure itself was lovely and my tech was so sweet. But I waited 25 minutes past my appointment time and nobody said anything to me about it.", rating: 3, technician: "", platform: "Yelp" },
 ];
 
 /* ---------------- localStorage store ---------------- */
@@ -438,20 +518,30 @@ function rosterBlock(techs) {
   if (!techs || !techs.length) return "(no roster on file)";
   return techs.map((t) => { const p = [`- ${t.name}`]; if (t.archetype) p.push(`archetype: ${t.archetype}`); if (t.note) p.push(`note: ${t.note}`); return p.join(" — "); }).join("\n");
 }
+function caseLibraryBlock() {
+  const lines = [];
+  for (const fam of FAMILIES) {
+    lines.push(`\n## ${fam}`);
+    for (const c of CASES.filter((x) => x.family === fam)) lines.push(`${String(c.n).padStart(2, "0")}. ${c.name} [approval: ${c.approval}] — trigger: ${c.trigger}.\n    ${c.strategy}`);
+  }
+  return lines.join("\n");
+}
 function buildSystemPrompt(brand) {
   const salon = brand.salon || {};
+  const owner = salon.owner || "the owner";
   const s = [];
-  s.push(`You are the review-response writer for ${salon.name || "this salon"}${salon.city ? " in " + salon.city : ""}. You draft replies to client reviews in this salon's specific, human voice — not a generic auto-responder. For each review you return an ARRAY of 2–4 distinct, ready-to-post response options that differ in STRATEGY and TONE (not just wording), each with a one-line rationale, plus any operational flags the review reveals.`);
+  s.push(`You are the brand voice for ${salon.name || "this salon"}${salon.city ? " in " + salon.city : ""}${salon.owner ? ", owned by " + salon.owner : ""}. You draft public replies to client reviews in this salon's specific, human voice — not a generic auto-responder. For each review you return an ARRAY of 2–4 distinct, ready-to-post response options that differ in STRATEGY and TONE (not just wording), each with a one-line rationale, plus any operational flags the review reveals.`);
+  s.push(`# Who you're writing for\nNot primarily the reviewer. The ~50 prospective clients who will read this exchange later while deciding whether to book. They judge on tone, not facts. Every choice below serves that reader — it's why the negative cases refuse to argue even when the salon is provably right.`);
   s.push(`# Integrity — non-negotiable\nNever invent visit details, prices, staff names, numbers, or facts not present in the review or the salon facts below. When tempted to assert something you can't verify, leave it out (surface it as an operational flag if relevant). No fabricated enthusiasm. Real numbers only.`);
   s.push(`# Salon facts (the only facts you may assert)\n\`\`\`json\n${JSON.stringify(salon, null, 2)}\n\`\`\``);
   if (brand.voice) s.push(`# Brand voice — follow these exactly\n${brand.voice.trim()}`);
   if (brand.exemplars && brand.exemplars.length) s.push(`# House voice — approved exemplars (the gold standard to EMULATE, never copy)\nEmulate their moves; never reuse their words.\n\n${brand.exemplars.join("\n\n")}`);
   s.push(`# Technician roster (never invent a technician)\n${rosterBlock(brand.technicians)}`);
-  s.push(`# Review classification (run this first)\nClassify the review as exactly one of: ${REVIEW_TYPES.join(", ")}. Use it to size and shape the reply.\n- Wordless Star: 1 line (+ tech name if known).\n- Short Positive (3–8 words): 1 sentence, match brevity.\n- Medium Positive (2–4 sentences): 2–3 sentences.\n- Detailed Positive (paragraph+): 3–4 sentences, anchor on the strongest phrase.\n- Mixed: address each, praise first, own the fair part, never defend price.\n- Negative – Service: short, own what's fair, correct calmly.\n- Negative – Communication: full accountability, name the failure.\n- Negative – Pricing: acknowledge value perception; never defend the number.\n- Negative – Hostile: FLAG for human review; factual, spine, no grovel.\n- Legacy Unanswered: signal "responding late" and "the salon has changed."\n- Resolved/Updated: honor the arc from problem to fix.`);
+  s.push(`# The case library — classify first (22 cases, 5 families)\nClassify the review as exactly ONE case by name, then follow that case's strategy for length, tone, and what to refuse to say. Approval levels: ${Object.entries(APPROVAL_LEVELS).map(([k, v]) => k + " = " + v.desc).join(" · ")}\n${caseLibraryBlock()}`);
+  s.push(`# The escalation ladder (apply while classifying)\n1. Read for the REAL risk first: the most dangerous element is often not what the reviewer emphasized. A late-arrival rant containing one line about bleeding is an Injury case, not a Policy case — classify by the highest-stakes element present.\n2. When a review spans two cases, the STRICTER approval level always wins.\n3. Draft with full private context (the owner's notes), publish with almost none of it — the owner's account informs strategy but never appears in the reply.\n4. Owner- and Legal-level cases are ALWAYS needs_human_review: true. Draft options remain factual and calm, never presented as one-click safe.\n5. On Owner/Legal-level replies, signing personally from the owner (e.g. "— ${owner}") usually lands better than a team sign-off; keep it optional elsewhere.`);
   if (brand.library) s.push(`# Response library & opener banks\n${brand.library.trim()}`);
-  s.push(`# Sensitive-case handling (must-have)\nBefore writing, screen the review. If it involves ANY of: hostility/abuse; a BBB, legal, attorney, or lawsuit mention; an injury or health-harm claim; an accusation of unsanitary practice; OR appears meant for a DIFFERENT business (mentions services this salon does not offer, e.g. waxing/hair, or staff/traits inconsistent with the salon) — then set "needs_human_review": true and put the reason in "sensitivity_reason". Still provide draft options, but keep them factual and calm, never confident/auto-postable. For a likely misdirected review, offer a gentle "we think this may have been intended for another salon" draft.`);
   if (brand.operationalFlags) s.push(`# Operational flags to watch for (internal only)\n${brand.operationalFlags.trim()}`);
-  s.push(`# Output contract — CRITICAL\nReturn ONLY a single valid JSON object, no markdown fences, no preamble. Shape:\n{\n  "detected_type": "<one of the classification types>",\n  "technician": "<name if the reviewer named one and it's usable, else null>",\n  "needs_human_review": <true|false>,\n  "sensitivity_reason": "<why, if needs_human_review, else null>",\n  "options": [ { "angle": "<short label>", "response": "<ready-to-post text>", "rationale": "<one line: why this angle>", "char_count": <int> } ],\n  "operational_flags": [ { "issue": "<systemic issue>", "severity": "low|medium|high", "note": "<owner-facing note>" } ],\n  "roster_note": "<'New name detected — add <name> to roster?' if a review named a tech NOT on the roster, else null>"\n}\nRules: options must be strategically distinct and open differently; responses must read like the approved exemplars (react to the reviewer's specific words, quote their strongest phrase, give a named tech a character trait, keep differentiators as light asides, never open with "Thank you for your feedback"); never use gratitude clichés; never compare to or attack competitors; never make unsupported health claims; never defend the price on a pricing complaint; set char_count to the length of "response". Sign-off optional and light — do not staple "${salon.signoff || ""}" onto every reply.`);
+  s.push(`# Output contract — CRITICAL\nReturn ONLY a single valid JSON object, no markdown fences, no preamble. Shape:\n{\n  "detected_type": "<the case name, exactly as listed>",\n  "approval_level": "<auto|check|owner|legal — the case's level, or stricter if the content demands it>",\n  "technician": "<name if the reviewer named one and it's usable, else null>",\n  "needs_human_review": <true|false — always true for owner/legal>,\n  "sensitivity_reason": "<why, if needs_human_review, else null>",\n  "options": [ { "angle": "<short label>", "response": "<ready-to-post text>", "rationale": "<one line: why this angle>", "char_count": <int> } ],\n  "left_out": [ "<what you deliberately left out of the replies, and the risk each omission avoids — one string per omission>" ],\n  "fragile_note": "<if any passage would read badly if trimmed (e.g. the alternative-causes paragraph on an injury case), say which passage and which direction NOT to edit it; else null>",\n  "operational_flags": [ { "issue": "<systemic issue>", "severity": "low|medium|high", "note": "<owner-facing note>" } ],\n  "roster_note": "<'New name detected — add <name> to roster?' if a review named a tech NOT on the roster, else null>"\n}\nRules: options must be strategically distinct and open differently; responses must read like the approved exemplars (react to the reviewer's specific words, quote their strongest phrase, give a named tech a character trait, keep differentiators as light asides, never open with "Thank you for your feedback"); obey the never-say list in the brand voice; set char_count to the length of "response". Sign-off optional and light — do not staple "${salon.signoff || ""}" onto every reply.`);
   return s.join("\n\n");
 }
 function buildUserMessage(input) {
@@ -476,12 +566,20 @@ function parseModelJson(text) {
 function normalizeResult(o) {
   o = o && typeof o === "object" ? o : {};
   const opts = Array.isArray(o.options) ? o.options : [];
+  const detected = typeof o.detected_type === "string" ? o.detected_type : "Unknown";
+  // Approval floor: the detected case's level wins if the model under-calls it,
+  // and Owner/Legal always implies needs_human_review.
+  const approval = effectiveApproval(detected, o.approval_level);
+  const mustReview = approval === "owner" || approval === "legal";
   return {
-    detected_type: typeof o.detected_type === "string" ? o.detected_type : "Unknown",
+    detected_type: detected,
+    approval_level: approval,
     technician: typeof o.technician === "string" && o.technician.trim() ? o.technician : null,
-    needs_human_review: o.needs_human_review === true,
-    sensitivity_reason: typeof o.sensitivity_reason === "string" && o.sensitivity_reason.trim() ? o.sensitivity_reason : null,
+    needs_human_review: o.needs_human_review === true || mustReview,
+    sensitivity_reason: typeof o.sensitivity_reason === "string" && o.sensitivity_reason.trim() ? o.sensitivity_reason : (mustReview ? `${APPROVAL_LEVELS[approval].label}-level case — ${APPROVAL_LEVELS[approval].desc}` : null),
     options: opts.map((op) => { const r = typeof op?.response === "string" ? op.response : ""; return { angle: typeof op?.angle === "string" ? op.angle : "Option", response: r, rationale: typeof op?.rationale === "string" ? op.rationale : "", char_count: Number.isFinite(op?.char_count) ? op.char_count : r.length }; }),
+    left_out: Array.isArray(o.left_out) ? o.left_out.filter((x) => typeof x === "string" && x.trim()) : [],
+    fragile_note: typeof o.fragile_note === "string" && o.fragile_note.trim() ? o.fragile_note : null,
     operational_flags: Array.isArray(o.operational_flags) ? o.operational_flags.filter((f) => f && typeof f === "object").map((f) => ({ issue: typeof f.issue === "string" ? f.issue : "", severity: ["low","medium","high"].includes(f.severity) ? f.severity : "low", note: typeof f.note === "string" ? f.note : "" })) : [],
     roster_note: typeof o.roster_note === "string" && o.roster_note.trim() ? o.roster_note : null,
   };
@@ -585,7 +683,7 @@ function shortLabel(p) { return (p?.label || "").replace(/\s*\(.*\)$/, "") || (p
 function shortLabelById(id) { const p = (state.config?.providers || []).find((x) => x.id === id); return p ? shortLabel(p) : id || ""; }
 
 const el = {};
-["salonName","salonSub","quickSwitch","keysBtn","activeLabel","reviewText","stars","clearStar","optionCount","runWith","runProvider","runModel","runModels","usageBar","techSelect","techFree","platformSelect","contextNote","generateBtn","exampleSelect","resultsHead","typeSelect","techDetected","regenBtn","humanBanner","rosterNote","cards","flagsPanel","flagsList","placeholder","loading","errorBox","keysOverlay","keysClose","keysDone","provList","activeHint","keyLock",
+["salonName","salonSub","quickSwitch","keysBtn","activeLabel","reviewText","stars","clearStar","optionCount","runWith","runProvider","runModel","runModels","usageBar","techSelect","techFree","platformSelect","contextNote","generateBtn","exampleSelect","resultsHead","typeSelect","techDetected","regenBtn","humanBanner","rosterNote","cards","approvalChip","fragileNote","leftOutPanel","leftOutList","flagsPanel","flagsList","placeholder","loading","errorBox","keysOverlay","keysClose","keysDone","provList","activeHint","keyLock",
  "sfName","sfCity","sfPrice","sfSignoff","sfTechs","salonSave","salonReset",
  "vlCount","vlExport","vlImport","vlClear","vlFile"].forEach((id) => (el[id] = document.getElementById(id)));
 
@@ -604,7 +702,7 @@ function init() {
   for (const p of cfg.providers) { const dl = document.getElementById(p.id + "Models"); if (dl && p.models) dl.innerHTML = p.models.map((m) => `<option value="${esc(m)}"></option>`).join(""); }
   el.techSelect.innerHTML = '<option value="">— none / detect —</option>' + cfg.technicians.map((n) => `<option value="${esc(n)}">${esc(n)}</option>`).join("");
   el.platformSelect.innerHTML = '<option value="">—</option>' + cfg.platforms.map((p) => `<option value="${esc(p)}">${esc(p)}</option>`).join("");
-  el.typeSelect.innerHTML = REVIEW_TYPES.map((t) => `<option value="${esc(t)}">${esc(t)}</option>`).join("");
+  el.typeSelect.innerHTML = FAMILIES.map((fam) => `<optgroup label="${esc(fam)}">` + CASES.filter((c) => c.family === fam).map((c) => `<option value="${esc(c.name)}">${esc(c.name)}</option>`).join("") + `</optgroup>`).join("");
   el.exampleSelect.innerHTML = '<option value="">—</option>' + FIXTURES.map((f, i) => `<option value="${i}">${esc(f.label)}</option>`).join("");
   if (!cfg.anyConfigured) openKeys();
 }
@@ -661,7 +759,7 @@ async function generate() {
   if (!input.review.trim() && input.rating == null) return toast("Add a review and/or a star rating first.");
   if (!anyConfigured()) { showError("No provider is set up yet. Open Settings and add an API key."); return openKeys(); }
   el.placeholder.classList.add("hidden"); el.errorBox.classList.add("hidden"); el.resultsHead.classList.add("hidden");
-  el.cards.innerHTML = ""; el.flagsPanel.classList.add("hidden"); el.humanBanner.classList.add("hidden"); el.rosterNote.classList.add("hidden"); el.usageBar.classList.add("hidden");
+  el.cards.innerHTML = ""; el.flagsPanel.classList.add("hidden"); el.humanBanner.classList.add("hidden"); el.rosterNote.classList.add("hidden"); el.usageBar.classList.add("hidden"); el.approvalChip.classList.add("hidden"); el.fragileNote.classList.add("hidden"); el.leftOutPanel.classList.add("hidden");
   el.loading.classList.remove("hidden"); el.generateBtn.disabled = true; el.regenBtn.disabled = true;
   try {
     const provider = input.provider && isConfigured(input.provider) ? input.provider : activeProvider();
@@ -683,7 +781,12 @@ function render(result, input) {
   el.typeSelect.value = REVIEW_TYPES.includes(result.detected_type) ? result.detected_type : "";
   if (result.detected_type && !REVIEW_TYPES.includes(result.detected_type)) { const o = document.createElement("option"); o.value = o.textContent = result.detected_type; el.typeSelect.appendChild(o); el.typeSelect.value = result.detected_type; }
   el.techDetected.innerHTML = result.technician ? `Technician: <b>${esc(result.technician)}</b>` : `<span class="muted">No technician named</span>`;
-  if (result.needs_human_review) { el.humanBanner.innerHTML = `<span>⚠</span><span><b>Needs owner / legal sign-off</b>${result.sensitivity_reason ? " — " + esc(result.sensitivity_reason) : ""}<br>These are drafts only. Read carefully and edit before anything is posted.</span>`; el.humanBanner.classList.remove("hidden"); }
+  const lvl = APPROVAL_LEVELS[result.approval_level] ? result.approval_level : null;
+  if (lvl) { el.approvalChip.className = "approval " + lvl; el.approvalChip.textContent = APPROVAL_LEVELS[lvl].label; el.approvalChip.title = APPROVAL_LEVELS[lvl].desc; el.approvalChip.classList.remove("hidden"); }
+  if (result.needs_human_review) {
+    const who = lvl === "legal" ? "owner + counsel sign-off" : lvl === "owner" ? "owner sign-off" : "a second pair of eyes";
+    el.humanBanner.innerHTML = `<span>⚠</span><span><b>Needs ${who}</b>${result.sensitivity_reason ? " — " + esc(result.sensitivity_reason) : ""}<br>These are drafts only. Read carefully and edit before anything is posted.</span>`; el.humanBanner.classList.remove("hidden");
+  }
   if (result.roster_note) { el.rosterNote.textContent = "👤 " + result.roster_note; el.rosterNote.classList.remove("hidden"); }
   el.cards.innerHTML = "";
   result.options.forEach((op, idx) => {
@@ -700,6 +803,8 @@ function render(result, input) {
     card.querySelector(".save").addEventListener("click", () => saveExemplar(input, ta.value, el.typeSelect.value));
     el.cards.appendChild(card);
   });
+  if (result.fragile_note) { el.fragileNote.innerHTML = `<span>⚑</span><span><b>Fragile wording</b> — ${esc(result.fragile_note)}</span>`; el.fragileNote.classList.remove("hidden"); }
+  if (result.left_out?.length) { el.leftOutList.innerHTML = result.left_out.map((x) => `<li>${esc(x)}</li>`).join(""); el.leftOutPanel.classList.remove("hidden"); }
   if (result.operational_flags?.length) { el.flagsList.innerHTML = result.operational_flags.map((f) => `<div class="flag"><span class="sev ${esc(f.severity)}">${esc(f.severity)}</span><div><span class="fissue">${esc(f.issue)}</span> — <span class="fnote">${esc(f.note)}</span></div></div>`).join(""); el.flagsPanel.classList.remove("hidden"); }
   else el.flagsPanel.classList.add("hidden");
 }
